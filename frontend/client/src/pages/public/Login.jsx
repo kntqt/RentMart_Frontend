@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import FlashMessage from '../../components/ui/FlashMessage';
-import { Lock, Mail, Store, ArrowLeft, KeyRound, ShieldAlert } from 'lucide-react';
+import { Lock, Mail, ArrowLeft } from 'lucide-react';
+
+import logoImg from '../../assets/logo.jpg';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -61,9 +63,7 @@ const Login = () => {
         {/* Card */}
         <div className="glass-dark rounded-[2.5rem] p-8 border border-white/10 shadow-2xl space-y-6">
           <div className="text-center space-y-3">
-            <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-sky-500 to-primary-600 flex items-center justify-center mx-auto shadow-lg shadow-sky-500/30">
-              <Store className="w-8 h-8 text-white" />
-            </div>
+            <img src={logoImg} alt="RentMart Logo" className="w-20 h-20 rounded-full object-cover mx-auto shadow-2xl border-2 border-emerald-500/40 ring-4 ring-emerald-500/20" />
             <h2 className="text-2xl font-black tracking-tight text-white">RENTMART</h2>
             <p className="text-xs text-slate-400 font-medium">Commercial Spaces Services Portal</p>
           </div>
@@ -109,6 +109,15 @@ const Login = () => {
               {loading ? 'Authenticating...' : 'Sign In to Portal'}
             </button>
           </form>
+
+          <div className="pt-2 text-center">
+            <p className="text-xs text-slate-400">
+              Don't have a renter account?{' '}
+              <Link to="/register" className="text-emerald-400 hover:underline font-bold">
+                Create Account
+              </Link>
+            </p>
+          </div>
 
           {/* Quick Demo Fill Accounts */}
           <div className="pt-4 border-t border-slate-800 space-y-3">

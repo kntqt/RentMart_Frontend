@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   User,
   Users,
+  UserPlus,
   Building2,
   Receipt,
   CreditCard,
@@ -14,6 +15,8 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+
+import logoImg from '../../assets/logo.jpg';
 
 const Sidebar = ({ collapsed, setCollapsed }) => {
   const { user, logout } = useAuth();
@@ -36,6 +39,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
     { label: 'Overview', path: '/staff/dashboard', icon: LayoutDashboard },
     { label: 'Profile', path: '/staff/profile', icon: User },
     { label: 'Renters', path: '/staff/renters', icon: Users },
+    { label: 'Create Renter', path: '/staff/create-renter', icon: UserPlus },
     { label: 'Browse Space', path: '/staff/spaces', icon: Store },
     { label: 'Payments', path: '/staff/payments', icon: CreditCard },
     { label: 'Billing', path: '/staff/billing', icon: Receipt },
@@ -63,18 +67,14 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         <div className="flex items-center justify-between h-20 px-6 border-b border-slate-800">
           {!collapsed ? (
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-primary-600 to-primary-400 flex items-center justify-center font-black text-xl text-white shadow-lg shadow-primary-500/30">
-                R
-              </div>
+              <img src={logoImg} alt="RentMart Logo" className="w-10 h-10 rounded-full object-cover shadow-lg border border-emerald-500/30 ring-2 ring-emerald-500/20" />
               <div>
                 <h1 className="font-extrabold text-lg leading-tight tracking-tight text-white">RENTMART</h1>
                 <p className="text-[10px] tracking-wider text-slate-400 font-semibold uppercase">Market CSS System</p>
               </div>
             </div>
           ) : (
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-primary-600 to-primary-400 flex items-center justify-center font-black text-xl text-white mx-auto">
-              R
-            </div>
+            <img src={logoImg} alt="RentMart Logo" className="w-10 h-10 rounded-full object-cover shadow-lg border border-emerald-500/30 ring-2 ring-emerald-500/20 mx-auto" />
           )}
 
           <button

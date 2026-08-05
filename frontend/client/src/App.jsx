@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 // Public Pages
 const Landing = lazy(() => import('./pages/public/Landing'));
 const Login = lazy(() => import('./pages/public/Login'));
+const Register = lazy(() => import('./pages/public/Register'));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
@@ -16,6 +17,7 @@ const AdminReports = lazy(() => import('./pages/admin/Reports'));
 
 // Staff Pages
 const StaffDashboard = lazy(() => import('./pages/staff/Dashboard'));
+const StaffCreateRenter = lazy(() => import('./pages/staff/CreateRenter'));
 const StaffSpaces = lazy(() => import('./pages/staff/Spaces'));
 const StaffBilling = lazy(() => import('./pages/staff/Billing'));
 const StaffPayments = lazy(() => import('./pages/staff/Payments'));
@@ -68,6 +70,7 @@ function AppRoutes() {
         {/* Public Routes */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
         {/* Admin Routes */}
         <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
@@ -81,6 +84,7 @@ function AppRoutes() {
         {/* Staff Routes */}
         <Route path="/staff/dashboard" element={<ProtectedRoute allowedRoles={['staff']}><StaffDashboard /></ProtectedRoute>} />
         <Route path="/staff/renters" element={<ProtectedRoute allowedRoles={['staff']}><AdminRenters /></ProtectedRoute>} />
+        <Route path="/staff/create-renter" element={<ProtectedRoute allowedRoles={['staff']}><StaffCreateRenter /></ProtectedRoute>} />
         <Route path="/staff/spaces" element={<ProtectedRoute allowedRoles={['staff']}><StaffSpaces /></ProtectedRoute>} />
         <Route path="/staff/payments" element={<ProtectedRoute allowedRoles={['staff']}><StaffPayments /></ProtectedRoute>} />
         <Route path="/staff/billing" element={<ProtectedRoute allowedRoles={['staff']}><StaffBilling /></ProtectedRoute>} />

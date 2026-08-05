@@ -1,17 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import api from '../../services/api';
-import { formatCurrency } from '../../utils/formatters';
-import { Store, ShieldCheck, FileText, ArrowRight, Phone, Mail, MapPin, CheckCircle, Search, Eye } from 'lucide-react';
-import Modal from '../../components/ui/Modal';
-import StatusBadge from '../../components/ui/StatusBadge';
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import api from "../../services/api";
+import { formatCurrency } from "../../utils/formatters";
+import { Store, ShieldCheck, FileText, ArrowRight, Phone, Mail, MapPin, Eye, UserPlus } from "lucide-react";
+import Modal from "../../components/ui/Modal";
+import StatusBadge from "../../components/ui/StatusBadge";
+
+import logoImg from "../../assets/logo.jpg";
 
 const Landing = () => {
   const [spaces, setSpaces] = useState([]);
   const [stats, setStats] = useState({ total: 0, available: 0, rented: 0 });
   const [selectedSpace, setSelectedSpace] = useState(null);
   const [typewriterIndex, setTypewriterIndex] = useState(0);
-  const words = ['Commercial Spaces', 'Digital Billing', 'Vendor Management', 'Market Services'];
+  const words = ["Commercial Spaces", "Digital Billing", "Vendor Management", "Market Services"];
 
   useEffect(() => {
     fetchSpaces();
@@ -23,23 +25,21 @@ const Landing = () => {
 
   const fetchSpaces = async () => {
     try {
-      const res = await api.get('/spaces?limit=8');
+      const res = await api.get("/spaces?limit=8");
       setSpaces(res.data.spaces || []);
       setStats(res.data.stats || { total: 0, available: 0, rented: 0 });
     } catch (error) {
-      console.error('Error loading spaces:', error);
+      console.error("Error loading spaces:", error);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-primary-500 selection:text-white">
+    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans">
       {/* Top Navbar */}
       <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-primary-600 to-primary-400 flex items-center justify-center font-black text-xl text-white shadow-lg shadow-primary-500/30">
-              R
-            </div>
+            <img src={logoImg} alt="RentMart Logo" className="w-11 h-11 rounded-full object-cover shadow-lg border border-emerald-500/30 ring-2 ring-emerald-500/20" />
             <div>
               <span className="text-xl font-black tracking-tight text-white">RENTMART</span>
               <span className="block text-[10px] tracking-widest text-primary-400 font-bold uppercase">Commercial Spaces Services</span>
@@ -53,7 +53,14 @@ const Landing = () => {
             <a href="#contact" className="hover:text-white transition">Contact</a>
           </nav>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
+            <Link
+              to="/register"
+              className="px-5 py-2.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold text-sm transition flex items-center space-x-2"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Create Account</span>
+            </Link>
             <Link
               to="/login"
               className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-primary-600 to-primary-500 text-white font-bold text-sm shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center space-x-2"
@@ -75,7 +82,8 @@ const Landing = () => {
             </div>
 
             <h1 className="text-4xl sm:text-6xl font-black text-white leading-tight">
-              Empowering Municipal Commerce with Modern <br />
+              Empowering Municipal Commerce with Modern{" "}
+              <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-sky-300 to-primary-600">
                 {words[typewriterIndex]}
               </span>
@@ -86,6 +94,13 @@ const Landing = () => {
             </p>
 
             <div className="flex flex-wrap gap-4 pt-2">
+              <Link
+                to="/register"
+                className="px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-base shadow-xl shadow-emerald-500/25 hover:from-emerald-400 hover:to-teal-500 hover:scale-[1.02] transition flex items-center space-x-2"
+              >
+                <UserPlus className="w-5 h-5" />
+                <span>Create Renter Account</span>
+              </Link>
               <Link
                 to="/login"
                 className="px-8 py-4 rounded-2xl bg-primary-600 text-white font-bold text-base shadow-xl shadow-primary-600/30 hover:bg-primary-500 hover:scale-[1.02] transition"
@@ -117,19 +132,17 @@ const Landing = () => {
             </div>
           </div>
 
-          {/* 3D Coin Flip Graphic Container */}
+          {/* Hero Graphic */}
           <div className="flex justify-center relative">
             <div className="w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-gradient-to-tr from-primary-600/20 to-sky-400/20 absolute blur-3xl -z-10 animate-pulse"></div>
             <div className="w-64 h-64 sm:w-80 sm:h-80 bg-gradient-to-tr from-slate-800 to-slate-900 rounded-[3rem] p-8 border border-slate-700/80 shadow-2xl flex flex-col items-center justify-center space-y-6 text-center animate-float">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-primary-500 to-sky-400 flex items-center justify-center shadow-xl shadow-primary-500/40 animate-coinFlip">
-                <Store className="w-12 h-12 text-white" />
-              </div>
+              <img src={logoImg} alt="RentMart System Logo" className="w-24 h-24 rounded-full object-cover shadow-2xl border-2 border-emerald-500/40 ring-4 ring-emerald-500/20" />
               <div>
                 <h3 className="text-xl font-extrabold text-white">RentMart System</h3>
                 <p className="text-xs text-slate-400 font-medium mt-1">Commercial Spaces Management</p>
               </div>
               <div className="px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
-                ● Market Digital CSS Active
+                Market Digital CSS Active
               </div>
             </div>
           </div>
@@ -220,13 +233,17 @@ const Landing = () => {
       <footer id="contact" className="py-12 border-t border-slate-800 bg-slate-950 text-slate-400 text-xs">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-xl bg-primary-600 text-white flex items-center justify-center font-bold">R</div>
-            <span className="font-bold text-slate-200">RentMart Commercial Spaces Services © 2026</span>
+            <img src={logoImg} alt="RentMart Logo" className="w-8 h-8 rounded-full object-cover border border-emerald-500/30 ring-1 ring-emerald-500/20" />
+            <div>
+              <span className="font-bold text-slate-200 block">RentMart Commercial Spaces Services</span>
+              <div className="flex flex-wrap gap-4 mt-1">
+                <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-emerald-400" /> Duero, Bohol, Philippines</span>
+                <span className="flex items-center gap-1"><Mail className="w-3 h-3 text-emerald-400" /> support@rentmart.com</span>
+                <span className="flex items-center gap-1"><Phone className="w-3 h-3 text-emerald-400" /> Market Admin Office</span>
+              </div>
+            </div>
           </div>
-          <div className="flex space-x-6">
-            <span>Duero, Bohol, Philippines</span>
-            <span>support@rentmart.com</span>
-          </div>
+          <span className="text-slate-500">Copyright 2026 RentMart. All rights reserved.</span>
         </div>
       </footer>
 
@@ -234,7 +251,7 @@ const Landing = () => {
       <Modal
         isOpen={!!selectedSpace}
         onClose={() => setSelectedSpace(null)}
-        title={`Space Details — ${selectedSpace?.space_number}`}
+        title={"Space Details - " + (selectedSpace ? selectedSpace.space_number : "")}
       >
         {selectedSpace && (
           <div className="space-y-6 text-slate-800">
