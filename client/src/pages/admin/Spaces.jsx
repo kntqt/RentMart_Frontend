@@ -4,12 +4,13 @@ import api from '../../services/api';
 import FlashMessage from '../../components/ui/FlashMessage';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
-import { formatCurrency } from '../../utils/formatters';
-import { Plus, Search, Check, X, Edit, Store, ShieldAlert, Layers } from 'lucide-react';
+import { formatCurrency, getSpaceImageUrl } from '../../utils/formatters';
+import { Plus, Search, Check, X, Edit, Store, ShieldAlert, Layers, Ban, CheckCircle } from 'lucide-react';
 
 const AdminSpaces = () => {
   const [spaces, setSpaces] = useState([]);
   const [pendingRentals, setPendingRentals] = useState([]);
+  const [activeRentals, setActiveRentals] = useState([]);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [flash, setFlash] = useState({ type: '', message: '' });
@@ -32,6 +33,7 @@ const AdminSpaces = () => {
   useEffect(() => {
     fetchSpaces();
     fetchPendingRentals();
+    fetchActiveRentals();
   }, [statusFilter, search]);
 
   const fetchSpaces = async () => {
@@ -52,24 +54,60 @@ const AdminSpaces = () => {
     }
   };
 
+  const fetchActiveRentals = async () => {
+    try {
+      const res = await api.get('/rentals?status=active');
+      setActiveRentals(res.data || []);
+    } catch (error) {
+      console.error('Error fetching active rentals:', error);
+    }
+  };
+
+  const refreshAll = () => {
+    fetchSpaces();
+    fetchPendingRentals();
+    fetchActiveRentals();
+  };
+
   const handleApproveRental = async (rentalId) => {
     try {
       await api.patch(`/rentals/${rentalId}/approve`);
       setFlash({ type: 'success', message: 'Rental request approved! Space is now set to Rented.' });
-      fetchSpaces();
-      fetchPendingRentals();
+      refreshAll();
     } catch (error) {
-      setFlash({ type: 'error', message: 'Error approving rental request.' });
+      setFlash({ type: 'error', message: error.response?.data?.message || 'Error approving rental request.' });
     }
   };
 
   const handleRejectRental = async (rentalId) => {
     try {
       await api.patch(`/rentals/${rentalId}/reject`);
-      setFlash({ type: 'success', message: 'Rental request rejected.' });
-      fetchPendingRentals();
+      setFlash({ type: 'success', message: 'Rental request rejected. Space is now available again.' });
+      refreshAll();
     } catch (error) {
-      setFlash({ type: 'error', message: 'Error rejecting rental request.' });
+      setFlash({ type: 'error', message: error.response?.data?.message || 'Error rejecting rental request.' });
+    }
+  };
+
+  const handleCancelRental = async (rentalId) => {
+    if (!window.confirm('Are you sure you want to cancel this rental? The space will become available again.')) return;
+    try {
+      await api.patch(`/rentals/${rentalId}/cancel`);
+      setFlash({ type: 'success', message: 'Rental cancelled. Space is now available.' });
+      refreshAll();
+    } catch (error) {
+      setFlash({ type: 'error', message: error.response?.data?.message || 'Error cancelling rental.' });
+    }
+  };
+
+  const handleCompleteRental = async (rentalId) => {
+    if (!window.confirm('Mark this rental as completed? The space will become available again for new tenants.')) return;
+    try {
+      await api.patch(`/rentals/${rentalId}/complete`);
+      setFlash({ type: 'success', message: 'Rental completed. Space is now available for new tenants.' });
+      refreshAll();
+    } catch (error) {
+      setFlash({ type: 'error', message: error.response?.data?.message || 'Error completing rental.' });
     }
   };
 
@@ -180,6 +218,48 @@ const AdminSpaces = () => {
           </div>
         )}
 
+        {/* Active Rentals Management */}
+        {activeRentals.length > 0 && (
+          <div className="p-6 rounded-3xl bg-blue-500/5 border border-blue-500/20 space-y-4">
+            <div className="flex items-center space-x-2 text-blue-700 font-bold text-base">
+              <Layers className="w-5 h-5" />
+              <span>Active Rentals ({activeRentals.length})</span>
+            </div>
+
+            <div className="divide-y divide-blue-500/10">
+              {activeRentals.map((ar) => (
+                <div key={ar.id} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <p className="font-extrabold text-slate-900">{ar.first_name} {ar.last_name} ({ar.email})</p>
+                    <p className="text-xs text-slate-600 font-medium mt-1">
+                      Space: <strong className="text-blue-800 font-bold">{ar.space_number}</strong> ({ar.location}) • Rate: {formatCurrency(ar.monthly_rate)}/yr
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Period: {ar.start_date} → {ar.end_date || 'N/A'}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => handleCompleteRental(ar.id)}
+                      className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-teal-600/20 transition"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      <span>Complete</span>
+                    </button>
+                    <button
+                      onClick={() => handleCancelRental(ar.id)}
+                      className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-orange-600/20 transition"
+                    >
+                      <Ban className="w-4 h-4" />
+                      <span>Cancel</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Filter and Search */}
         <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
           <div className="relative flex-1 w-full">
@@ -199,6 +279,7 @@ const AdminSpaces = () => {
           >
             <option value="all">All Space Status</option>
             <option value="available">Available</option>
+            <option value="reserved">Reserved</option>
             <option value="rented">Rented</option>
             <option value="maintenance">Maintenance</option>
           </select>
@@ -207,29 +288,40 @@ const AdminSpaces = () => {
         {/* Spaces Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {spaces.map((s) => (
-            <div key={s.id} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition space-y-4 flex flex-col justify-between">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xl font-black text-slate-900">{s.space_number}</span>
+            <div key={s.id} className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition flex flex-col justify-between group">
+              <div className="relative h-44 w-full overflow-hidden bg-slate-100">
+                <img
+                  src={getSpaceImageUrl(s.image, s.space_number)}
+                  alt={s.space_number}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+                <div className="absolute top-3 right-3">
                   <StatusBadge status={s.status} />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-700">{s.location}</p>
-                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">{s.description}</p>
+                <div className="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-black text-white">
+                  {s.space_number}
+                </div>
+              </div>
+
+              <div className="p-5 space-y-4 flex-1 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-bold text-slate-800">{s.location}</p>
+                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{s.description}</p>
                 </div>
                 <div className="pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
                   <span className="text-slate-400">Size: <strong className="text-slate-700">{s.size_sqm} sqm</strong></span>
                   <span className="text-primary-600 font-extrabold text-sm">{formatCurrency(s.monthly_rate)} / yr</span>
                 </div>
-              </div>
 
-              <button
-                onClick={() => openEditModal(s)}
-                className="w-full py-2.5 rounded-xl bg-slate-50 hover:bg-primary-50 text-slate-700 hover:text-primary-600 font-bold text-xs border border-slate-200 hover:border-primary-200 transition flex items-center justify-center space-x-2"
-              >
-                <Edit className="w-4 h-4" />
-                <span>Edit Space Details</span>
-              </button>
+                <button
+                  onClick={() => openEditModal(s)}
+                  className="w-full py-2.5 rounded-xl bg-slate-50 hover:bg-primary-50 text-slate-700 hover:text-primary-600 font-bold text-xs border border-slate-200 hover:border-primary-200 transition flex items-center justify-center space-x-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span>Edit Space Details</span>
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -324,6 +416,7 @@ const AdminSpaces = () => {
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold"
               >
                 <option value="available">available</option>
+                <option value="reserved">reserved</option>
                 <option value="rented">rented</option>
                 <option value="maintenance">maintenance</option>
               </select>

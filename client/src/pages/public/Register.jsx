@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../services/api';
 import FlashMessage from '../../components/ui/FlashMessage';
-import { User, Mail, Lock, Phone, MapPin, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { User, Mail, Phone, MapPin, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 import logoImg from '../../assets/logo.jpg';
 
@@ -12,8 +12,6 @@ const Register = () => {
     middle_name: '',
     last_name: '',
     email: '',
-    password: '',
-    confirm_password: '',
     contact_number: '',
     address: '',
     gender: 'Male',
@@ -35,16 +33,6 @@ const Register = () => {
     setError('');
     setSuccess('');
 
-    if (formData.password !== formData.confirm_password) {
-      setError('Passwords do not match.');
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long.');
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -53,14 +41,13 @@ const Register = () => {
         middle_name: formData.middle_name,
         last_name: formData.last_name,
         email: formData.email,
-        password: formData.password,
         contact_number: formData.contact_number,
         address: formData.address,
         gender: formData.gender,
         civil_status: formData.civil_status
       });
 
-      setSuccess(res.data.message || 'Registration successful! Your account is pending approval.');
+      setSuccess(res.data.message || 'Registration submitted! Your account is pending approval. The administrator will create your login credentials.');
       setTimeout(() => {
         navigate('/login');
       }, 3500);
@@ -90,6 +77,7 @@ const Register = () => {
             <img src={logoImg} alt="RentMart Logo" className="w-20 h-20 rounded-full object-cover mx-auto shadow-2xl border-2 border-emerald-500/40 ring-4 ring-emerald-500/20" />
             <h2 className="text-2xl font-black tracking-tight text-white">Create Renter Account</h2>
             <p className="text-xs text-slate-400 font-medium">Register as a vendor/renter for Duero Public Market commercial spaces</p>
+            <p className="text-[11px] text-amber-400/80 font-semibold">Your login credentials will be created by the administrator upon approval.</p>
           </div>
 
           <FlashMessage type="error" message={error} onClose={() => setError('')} />
@@ -226,46 +214,12 @@ const Register = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Password *</label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
-                  <input
-                    type="password"
-                    name="password"
-                    required
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-sky-400 text-sm transition"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Confirm Password *</label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
-                  <input
-                    type="password"
-                    name="confirm_password"
-                    required
-                    value={formData.confirm_password}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-sky-400 text-sm transition"
-                  />
-                </div>
-              </div>
-            </div>
-
             <button
               type="submit"
               disabled={loading}
               className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-sky-600 hover:from-emerald-400 hover:to-sky-500 text-white font-bold text-sm shadow-xl shadow-emerald-500/25 transition transform active:scale-[0.98] disabled:opacity-50 mt-2"
             >
-              {loading ? 'Registering Account...' : 'Submit Renter Registration'}
+              {loading ? 'Submitting Registration...' : 'Submit Renter Registration'}
             </button>
           </form>
 

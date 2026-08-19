@@ -4,7 +4,7 @@ import api from '../../services/api';
 import FlashMessage from '../../components/ui/FlashMessage';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, getSpaceImageUrl } from '../../utils/formatters';
 import { Search, UserCheck, Store, Calendar, CheckCircle } from 'lucide-react';
 
 const StaffSpaces = () => {
@@ -116,35 +116,48 @@ const StaffSpaces = () => {
         {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {spaces.map((s) => (
-            <div key={s.id} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition space-y-4 flex flex-col justify-between">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xl font-black text-slate-900">{s.space_number}</span>
+            <div key={s.id} className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition flex flex-col justify-between group">
+              <div className="relative h-44 w-full overflow-hidden bg-slate-100">
+                <img
+                  src={getSpaceImageUrl(s.image, s.space_number)}
+                  alt={s.space_number}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+                <div className="absolute top-3 right-3">
                   <StatusBadge status={s.status} />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-700">{s.location}</p>
-                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">{s.description}</p>
+                <div className="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-black text-white">
+                  {s.space_number}
+                </div>
+              </div>
+
+              <div className="p-5 space-y-4 flex-1 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-bold text-slate-800">{s.location}</p>
+                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{s.description}</p>
                 </div>
                 <div className="pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
                   <span className="text-slate-400">Size: <strong className="text-slate-700">{s.size_sqm} sqm</strong></span>
                   <span className="text-primary-600 font-extrabold text-sm">{formatCurrency(s.monthly_rate)} / yr</span>
                 </div>
-              </div>
 
-              {s.status === 'available' ? (
-                <button
-                  onClick={() => openAssignModal(s)}
-                  className="w-full py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-bold text-xs shadow-md shadow-primary-600/20 transition flex items-center justify-center space-x-2"
-                >
-                  <UserCheck className="w-4 h-4" />
-                  <span>Assign Renter</span>
-                </button>
-              ) : (
-                <button disabled className="w-full py-2.5 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs cursor-not-allowed">
-                  Stall Occupied
-                </button>
-              )}
+                <div className="pt-1">
+                  {s.status === 'available' ? (
+                    <button
+                      onClick={() => openAssignModal(s)}
+                      className="w-full py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-bold text-xs shadow-md shadow-primary-600/20 transition flex items-center justify-center space-x-2"
+                    >
+                      <UserCheck className="w-4 h-4" />
+                      <span>Assign Renter</span>
+                    </button>
+                  ) : (
+                    <button disabled className="w-full py-2.5 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs cursor-not-allowed">
+                      Stall Occupied
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           ))}
         </div>

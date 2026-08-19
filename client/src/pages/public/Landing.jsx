@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
-import { formatCurrency } from "../../utils/formatters";
-import { Store, ShieldCheck, FileText, ArrowRight, Phone, Mail, MapPin, Eye, UserPlus } from "lucide-react";
+import { formatCurrency, getSpaceImageUrl } from "../../utils/formatters";
+import { Store, ShieldCheck, FileText, ArrowRight, Phone, Mail, MapPin, Eye, UserPlus, Lock } from "lucide-react";
 import Modal from "../../components/ui/Modal";
 import StatusBadge from "../../components/ui/StatusBadge";
 
@@ -32,6 +32,8 @@ const Landing = () => {
       console.error("Error loading spaces:", error);
     }
   };
+
+  const isAvailable = (status) => status === 'available';
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 font-sans">
@@ -199,30 +201,63 @@ const Landing = () => {
             {spaces.map((space) => (
               <div
                 key={space.id}
-                className="bg-slate-800/80 rounded-3xl p-6 border border-slate-700/60 hover:border-primary-500/60 transition group flex flex-col justify-between"
+                className="bg-slate-800/80 rounded-3xl overflow-hidden border border-slate-700/60 hover:border-primary-500/60 transition group flex flex-col justify-between"
               >
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-black text-white">{space.space_number}</span>
+                {/* Space Image */}
+                <div className="relative h-48 w-full overflow-hidden bg-slate-950">
+                  <img
+                    src={getSpaceImageUrl(space.image, space.space_number)}
+                    alt={space.space_number}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  <div className="absolute top-3 right-3">
                     <StatusBadge status={space.status} />
                   </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-slate-300">{space.location}</h4>
-                    <p className="text-xs text-slate-400 mt-1 line-clamp-2">{space.description}</p>
-                  </div>
-                  <div className="pt-2 border-t border-slate-700/60 flex justify-between items-center text-xs">
-                    <span className="text-slate-400">Size: <strong className="text-slate-200">{space.size_sqm} sqm</strong></span>
-                    <span className="text-primary-400 font-extrabold text-sm">{formatCurrency(space.monthly_rate)} / yr</span>
+                  <div className="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-xl text-xs font-black text-white">
+                    {space.space_number}
                   </div>
                 </div>
 
-                <button
-                  onClick={() => setSelectedSpace(space)}
-                  className="mt-6 w-full py-2.5 rounded-xl bg-slate-700 hover:bg-primary-600 text-white font-bold text-xs transition flex items-center justify-center space-x-2"
-                >
-                  <Eye className="w-4 h-4" />
-                  <span>View Details</span>
-                </button>
+                <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-bold text-slate-200">{space.location}</h4>
+                    <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{space.description}</p>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-700/60 flex justify-between items-center text-xs">
+                    <span className="text-slate-400">Size: <strong className="text-slate-200">{space.size_sqm} sqm</strong></span>
+                    <span className="text-primary-400 font-extrabold text-sm">{formatCurrency(space.monthly_rate)} / yr</span>
+                  </div>
+
+                  <div className="pt-2 flex flex-col space-y-2">
+                    <button
+                      onClick={() => setSelectedSpace(space)}
+                      className="w-full py-2.5 rounded-xl bg-slate-700 hover:bg-primary-600 text-white font-bold text-xs transition flex items-center justify-center space-x-2"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>View Details</span>
+                    </button>
+
+                    {isAvailable(space.status) ? (
+                      <Link
+                        to="/login"
+                        className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center justify-center space-x-2 shadow-md shadow-emerald-600/20"
+                      >
+                        <Store className="w-4 h-4" />
+                        <span>Rent Now</span>
+                      </Link>
+                    ) : (
+                      <button
+                        disabled
+                        className="w-full py-2.5 rounded-xl bg-slate-700/50 text-slate-400 font-bold text-xs cursor-not-allowed flex items-center justify-center space-x-2"
+                      >
+                        <Lock className="w-4 h-4" />
+                        <span>Unavailable</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -255,6 +290,15 @@ const Landing = () => {
       >
         {selectedSpace && (
           <div className="space-y-6 text-slate-800">
+            {/* Modal Image */}
+            <div className="w-full h-56 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
+              <img
+                src={getSpaceImageUrl(selectedSpace.image, selectedSpace.space_number)}
+                alt={selectedSpace.space_number}
+                className="w-full h-full object-cover"
+              />
+            </div>
+
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-slate-500">Status</span>
               <StatusBadge status={selectedSpace.status} />
@@ -279,12 +323,21 @@ const Landing = () => {
             </div>
 
             <div className="pt-4 border-t border-slate-100">
-              <Link
-                to="/login"
-                className="w-full py-3 rounded-2xl bg-primary-600 text-white font-bold text-center block text-sm shadow-lg shadow-primary-500/30 hover:bg-primary-500"
-              >
-                Log In to Request Rental
-              </Link>
+              {isAvailable(selectedSpace.status) ? (
+                <Link
+                  to="/login"
+                  className="w-full py-3 rounded-2xl bg-primary-600 text-white font-bold text-center block text-sm shadow-lg shadow-primary-500/30 hover:bg-primary-500"
+                >
+                  Log In to Request Rental
+                </Link>
+              ) : (
+                <button
+                  disabled
+                  className="w-full py-3 rounded-2xl bg-slate-200 text-slate-500 font-bold text-center block text-sm cursor-not-allowed"
+                >
+                  This Space is Currently {selectedSpace.status.charAt(0).toUpperCase() + selectedSpace.status.slice(1)}
+                </button>
+              )}
             </div>
           </div>
         )}

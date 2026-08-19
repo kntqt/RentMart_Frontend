@@ -4,7 +4,7 @@ import api from '../../services/api';
 import FlashMessage from '../../components/ui/FlashMessage';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
-import { Plus, Search, Eye, EyeOff, Check, X, Edit, Trash2, UserPlus, RefreshCw } from 'lucide-react';
+import { Plus, Search, Eye, EyeOff, Check, X, Edit, Trash2, UserPlus, RefreshCw, Lock, User, Mail, Phone, MapPin, ShieldCheck, Copy, CheckCircle2 } from 'lucide-react';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -19,7 +19,18 @@ const AdminUsers = () => {
   // Modals
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isApproveOpen, setIsApproveOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [isCredentialsOpen, setIsCredentialsOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [createdCredentials, setCreatedCredentials] = useState(null);
+
+  // Approve form
+  const [approveEmail, setApproveEmail] = useState('');
+  const [approvePassword, setApprovePassword] = useState('');
+  const [approveConfirmPassword, setApproveConfirmPassword] = useState('');
+  const [approveError, setApproveError] = useState('');
+  const [approveLoading, setApproveLoading] = useState(false);
 
   // Form fields
   const [formData, setFormData] = useState({
@@ -97,17 +108,55 @@ const AdminUsers = () => {
     }
   };
 
-  const handleApprove = async (id) => {
+  // Open the approve modal instead of directly approving
+  const openApproveModal = (user) => {
+    setSelectedUser(user);
+    setApproveEmail(user.email || '');
+    setApprovePassword('');
+    setApproveConfirmPassword('');
+    setApproveError('');
+    setIsApproveOpen(true);
+  };
+
+  const handleApproveSubmit = async (e) => {
+    e.preventDefault();
+    setApproveError('');
+
+    if (!approveEmail || !approveEmail.trim()) {
+      setApproveError('Email address is required.');
+      return;
+    }
+
+    if (approvePassword.length < 6) {
+      setApproveError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    if (approvePassword !== approveConfirmPassword) {
+      setApproveError('Passwords do not match.');
+      return;
+    }
+
+    setApproveLoading(true);
     try {
-      await api.patch(`/users/${id}/approve`);
-      setFlash({ type: 'success', message: 'Renter approved and activated.' });
+      const res = await api.patch(`/users/${selectedUser.id}/approve`, { email: approveEmail.trim(), password: approvePassword });
+      setIsApproveOpen(false);
+      setFlash({ type: 'success', message: 'Renter approved and account created.' });
+
+      // Show credentials modal
+      setCreatedCredentials(res.data.user);
+      setIsCredentialsOpen(true);
+
       fetchUsers();
     } catch (error) {
-      setFlash({ type: 'error', message: 'Error approving renter.' });
+      setApproveError(error.response?.data?.message || 'Error approving renter.');
+    } finally {
+      setApproveLoading(false);
     }
   };
 
   const handleReject = async (id) => {
+    if (!window.confirm('Are you sure you want to reject this renter registration?')) return;
     try {
       await api.patch(`/users/${id}/reject`);
       setFlash({ type: 'success', message: 'Renter registration rejected.' });
@@ -146,6 +195,11 @@ const AdminUsers = () => {
     setIsEditOpen(true);
   };
 
+  const openViewModal = (u) => {
+    setSelectedUser(u);
+    setIsViewOpen(true);
+  };
+
   const resetForm = () => {
     setFormData({
       role: 'renter',
@@ -161,6 +215,19 @@ const AdminUsers = () => {
       status: 'active'
     });
   };
+
+  const [copiedField, setCopiedField] = useState('');
+  const copyToClipboard = (text, field) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(''), 2000);
+  };
+
+  // Determine which actions to show per user
+  const isPending = (u) => u.approval_status === 'pending';
+  const isApproved = (u) => u.approval_status === 'approved';
+  const isRejected = (u) => u.approval_status === 'rejected';
+  const isRenter = (u) => u.role === 'renter';
 
   return (
     <DashboardLayout>
@@ -251,17 +318,21 @@ const AdminUsers = () => {
 
                       {/* Password Plain Visibility Toggle */}
                       <td className="py-4 px-6">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-mono text-xs text-slate-600">
-                            {showPassMap[u.id] ? (u.password_plain || 'Encrypted') : '••••••••'}
-                          </span>
-                          <button
-                            onClick={() => togglePasswordVisibility(u.id)}
-                            className="p-1 text-slate-400 hover:text-slate-600 rounded transition"
-                          >
-                            {showPassMap[u.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                        </div>
+                        {isRenter(u) && isPending(u) ? (
+                          <span className="text-xs text-slate-400 italic">No account yet</span>
+                        ) : (
+                          <div className="flex items-center space-x-2">
+                            <span className="font-mono text-xs text-slate-600">
+                              {showPassMap[u.id] ? (u.password_plain || 'Encrypted') : '••••••••'}
+                            </span>
+                            <button
+                              onClick={() => togglePasswordVisibility(u.id)}
+                              className="p-1 text-slate-400 hover:text-slate-600 rounded transition"
+                            >
+                              {showPassMap[u.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        )}
                       </td>
 
                       {/* Approval Status & Actions */}
@@ -269,7 +340,7 @@ const AdminUsers = () => {
                         {u.approval_status === 'pending' ? (
                           <div className="flex items-center space-x-2">
                             <button
-                              onClick={() => handleApprove(u.id)}
+                              onClick={() => openApproveModal(u)}
                               className="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold border border-emerald-200 flex items-center space-x-1"
                             >
                               <Check className="w-3.5 h-3.5" />
@@ -288,28 +359,51 @@ const AdminUsers = () => {
                         )}
                       </td>
 
-                      {/* Active/Inactive Toggle */}
+                      {/* Active/Inactive Toggle — hidden for pending and rejected renters */}
                       <td className="py-4 px-6">
-                        <select
-                          value={u.status}
-                          onChange={(e) => handleStatusChange(u.id, e.target.value)}
-                          className="px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none"
-                        >
-                          <option value="active">active</option>
-                          <option value="inactive">inactive</option>
-                        </select>
+                        {isRenter(u) && (isPending(u) || isRejected(u)) ? (
+                          <span className="text-xs text-slate-400 italic">—</span>
+                        ) : (
+                          <select
+                            value={u.status}
+                            onChange={(e) => handleStatusChange(u.id, e.target.value)}
+                            className="px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none"
+                          >
+                            <option value="active">active</option>
+                            <option value="inactive">inactive</option>
+                          </select>
+                        )}
                       </td>
 
+                      {/* Actions — conditional based on approval status */}
                       <td className="py-4 px-6 text-right space-x-2">
-                        <button
-                          onClick={() => openEditModal(u)}
-                          className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
+                        {/* View button — only for approved renters or non-renter users */}
+                        {isRenter(u) && isApproved(u) && (
+                          <button
+                            onClick={() => openViewModal(u)}
+                            className="p-2 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition"
+                            title="View Info"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        {/* Edit button — hidden for renters (pending, approved, or rejected) */}
+                        {!isRenter(u) && (
+                          <button
+                            onClick={() => openEditModal(u)}
+                            className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition"
+                            title="Edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        {/* Delete button — always visible */}
                         <button
                           onClick={() => handleDelete(u.id)}
                           className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition"
+                          title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -413,7 +507,7 @@ const AdminUsers = () => {
         </form>
       </Modal>
 
-      {/* Edit User Modal */}
+      {/* Edit User Modal — only for non-renter users */}
       <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit User Account">
         <form onSubmit={handleEditSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -470,8 +564,222 @@ const AdminUsers = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Approve Renter — Create Account Modal */}
+      <Modal isOpen={isApproveOpen} onClose={() => setIsApproveOpen(false)} title="Create Renter Account">
+        {selectedUser && (
+          <form onSubmit={handleApproveSubmit} className="space-y-5">
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-lg">
+                  {selectedUser.first_name.charAt(0)}
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900 text-base">{selectedUser.first_name} {selectedUser.middle_name} {selectedUser.last_name}</p>
+                  <p className="text-xs text-slate-500 font-medium">{selectedUser.email}</p>
+                </div>
+              </div>
+              <p className="text-xs text-emerald-700 font-semibold">
+                Approving this renter will activate their account. Please set their email and create a password for their login credentials below.
+              </p>
+            </div>
+
+            {approveError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold">
+                {approveError}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+                <Mail className="w-3.5 h-3.5 inline mr-1" />
+                Email Address *
+              </label>
+              <input
+                type="email"
+                required
+                value={approveEmail}
+                onChange={(e) => setApproveEmail(e.target.value)}
+                placeholder="renter@email.com"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+                <Lock className="w-3.5 h-3.5 inline mr-1" />
+                Create Password *
+              </label>
+              <input
+                type="password"
+                required
+                value={approvePassword}
+                onChange={(e) => setApprovePassword(e.target.value)}
+                placeholder="Enter password (min. 6 characters)"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-mono focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+                <Lock className="w-3.5 h-3.5 inline mr-1" />
+                Confirm Password *
+              </label>
+              <input
+                type="password"
+                required
+                value={approveConfirmPassword}
+                onChange={(e) => setApproveConfirmPassword(e.target.value)}
+                placeholder="Re-enter password"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-mono focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <div className="pt-4 flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setIsApproveOpen(false)}
+                className="px-5 py-2.5 rounded-xl bg-slate-100 font-bold text-slate-600 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={approveLoading}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 disabled:opacity-50 flex items-center space-x-2"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>{approveLoading ? 'Creating Account...' : 'Create Account & Approve'}</span>
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      {/* Credentials Success Modal */}
+      <Modal isOpen={isCredentialsOpen} onClose={() => setIsCredentialsOpen(false)} title="Account Created Successfully">
+        {createdCredentials && (
+          <div className="space-y-5">
+            <div className="text-center space-y-3">
+              <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-slate-900">Renter Account Created!</p>
+                <p className="text-sm text-slate-500">Share these login credentials with the renter.</p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase">Name</p>
+                  <p className="text-sm font-bold text-slate-900">{createdCredentials.name}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase">Email</p>
+                  <p className="text-sm font-mono text-slate-900">{createdCredentials.email}</p>
+                </div>
+                <button
+                  onClick={() => copyToClipboard(createdCredentials.email, 'email')}
+                  className="p-1.5 text-slate-400 hover:text-primary-600 rounded-lg transition"
+                  title="Copy email"
+                >
+                  {copiedField === 'email' ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase">Password</p>
+                  <p className="text-sm font-mono text-slate-900">{createdCredentials.password_plain}</p>
+                </div>
+                <button
+                  onClick={() => copyToClipboard(createdCredentials.password_plain, 'password')}
+                  className="p-1.5 text-slate-400 hover:text-primary-600 rounded-lg transition"
+                  title="Copy password"
+                >
+                  {copiedField === 'password' ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => setIsCredentialsOpen(false)}
+                className="px-6 py-2.5 rounded-xl bg-primary-600 text-white font-bold text-sm shadow-lg shadow-primary-500/25"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* View Renter Info Modal (Read-Only) */}
+      <Modal isOpen={isViewOpen} onClose={() => setIsViewOpen(false)} title="Renter Information">
+        {selectedUser && (
+          <div className="space-y-5">
+            <div className="flex items-center space-x-4 p-4 rounded-2xl bg-sky-50 border border-sky-200">
+              <div className="w-14 h-14 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center font-bold text-xl">
+                {selectedUser.first_name.charAt(0)}
+              </div>
+              <div>
+                <p className="text-lg font-bold text-slate-900">{selectedUser.first_name} {selectedUser.middle_name} {selectedUser.last_name}</p>
+                <p className="text-xs text-slate-500 font-medium">ID #{String(selectedUser.id).padStart(4, '0')}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <p className="text-xs font-bold text-slate-400 uppercase flex items-center">
+                  <Mail className="w-3.5 h-3.5 mr-1.5" /> Email
+                </p>
+                <p className="text-sm font-semibold text-slate-900 mt-1">{selectedUser.email}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <p className="text-xs font-bold text-slate-400 uppercase flex items-center">
+                  <Phone className="w-3.5 h-3.5 mr-1.5" /> Contact
+                </p>
+                <p className="text-sm font-semibold text-slate-900 mt-1">{selectedUser.contact_number || 'N/A'}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <p className="text-xs font-bold text-slate-400 uppercase flex items-center">
+                  <MapPin className="w-3.5 h-3.5 mr-1.5" /> Address
+                </p>
+                <p className="text-sm font-semibold text-slate-900 mt-1">{selectedUser.address || 'N/A'}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <p className="text-xs font-bold text-slate-400 uppercase flex items-center">
+                  <User className="w-3.5 h-3.5 mr-1.5" /> Gender
+                </p>
+                <p className="text-sm font-semibold text-slate-900 mt-1">{selectedUser.gender || 'N/A'}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <p className="text-xs font-bold text-slate-400 uppercase">Civil Status</p>
+                <p className="text-sm font-semibold text-slate-900 mt-1">{selectedUser.civil_status || 'N/A'}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <p className="text-xs font-bold text-slate-400 uppercase">Account Status</p>
+                <p className="text-sm mt-1"><StatusBadge status={selectedUser.status} /></p>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => setIsViewOpen(false)}
+                className="px-6 py-2.5 rounded-xl bg-slate-100 font-bold text-slate-600 text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </DashboardLayout>
   );
 };
 
 export default AdminUsers;
+
