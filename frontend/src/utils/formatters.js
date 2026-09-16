@@ -34,7 +34,7 @@ export const getSpaceImageUrl = (image, spaceNumber = '') => {
     return image;
   }
 
-  if (['stall_wet.png', 'stall_retail.png', 'stall_food.png', 'stall_grocery.png'].includes(image)) {
+  if (image.startsWith('stall_') && (image.endsWith('.jpg') || image.endsWith('.png') || image.endsWith('.webp'))) {
     return `/assets/spaces/${image}`;
   }
 

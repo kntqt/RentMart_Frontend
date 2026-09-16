@@ -5,9 +5,22 @@ import FlashMessage from '../../components/ui/FlashMessage';
 import Modal from '../../components/ui/Modal';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { formatCurrency, getSpaceImageUrl } from '../../utils/formatters';
-import { Plus, Search, Check, X, Edit, Store, ShieldAlert, Layers, Ban, CheckCircle, Upload, Image as ImageIcon, Trash2 } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  Edit,
+  Store,
+  Upload,
+  Image as ImageIcon,
+  Trash2,
+  CheckCircle,
+  Building2,
+  Layers,
+  Clock,
+  Wrench,
+  AlertCircle
+} from 'lucide-react';
 
-// Injects the market's type system once, without touching index.html
 const useMarketFonts = () => {
   useEffect(() => {
     if (document.getElementById("rentmart-fonts")) return;
@@ -21,22 +34,24 @@ const useMarketFonts = () => {
 
 const displayStyle = { fontFamily: "'Archivo Black', sans-serif" };
 const monoStyle = { fontFamily: "'IBM Plex Mono', monospace" };
-const modalInputClass = "w-full px-4 py-2.5 rounded-lg border border-[#241C15]/15 text-sm text-[#241C15] focus:outline-none focus:border-[#C1440E] transition";
-const modalLabelClass = "block text-xs font-bold text-[#241C15]/50 uppercase mb-1";
+const modalInputClass = "w-full px-4 py-2.5 rounded-lg border border-[#241C15]/15 text-sm text-[#241C15] focus:outline-none focus:border-[#C1440E] transition bg-white";
+const modalLabelClass = "block text-xs font-bold text-[#241C15]/60 uppercase tracking-wider mb-1";
 
 const AdminSpaces = () => {
   useMarketFonts();
   const [spaces, setSpaces] = useState([]);
-  const [pendingRentals, setPendingRentals] = useState([]);
-  const [activeRentals, setActiveRentals] = useState([]);
+  const [stats, setStats] = useState({ total: 0, available: 0, rented: 0, reserved: 0, maintenance: 0 });
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(false);
   const [flash, setFlash] = useState({ type: '', message: '' });
 
   // Modals
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedSpace, setSelectedSpace] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -56,82 +71,21 @@ const AdminSpaces = () => {
 
   useEffect(() => {
     fetchSpaces();
-    fetchPendingRentals();
-    fetchActiveRentals();
   }, [statusFilter, search]);
 
   const fetchSpaces = async () => {
+    setLoading(true);
     try {
-      const res = await api.get(`/spaces?status=${statusFilter}&search=${search}`);
+      const res = await api.get(`/spaces?status=${statusFilter}&search=${encodeURIComponent(search)}`);
       setSpaces(res.data.spaces || []);
+      if (res.data.stats) {
+        setStats(res.data.stats);
+      }
     } catch (error) {
       console.error('Error fetching spaces:', error);
-    }
-  };
-
-  const fetchPendingRentals = async () => {
-    try {
-      const res = await api.get('/rentals/pending');
-      setPendingRentals(res.data || []);
-    } catch (error) {
-      console.error('Error fetching pending rentals:', error);
-    }
-  };
-
-  const fetchActiveRentals = async () => {
-    try {
-      const res = await api.get('/rentals?status=active');
-      setActiveRentals(res.data || []);
-    } catch (error) {
-      console.error('Error fetching active rentals:', error);
-    }
-  };
-
-  const refreshAll = () => {
-    fetchSpaces();
-    fetchPendingRentals();
-    fetchActiveRentals();
-  };
-
-  const handleApproveRental = async (rentalId) => {
-    try {
-      await api.patch(`/rentals/${rentalId}/approve`);
-      setFlash({ type: 'success', message: 'Rental request approved! Space is now set to Rented.' });
-      refreshAll();
-    } catch (error) {
-      setFlash({ type: 'error', message: error.response?.data?.message || 'Error approving rental request.' });
-    }
-  };
-
-  const handleRejectRental = async (rentalId) => {
-    try {
-      await api.patch(`/rentals/${rentalId}/reject`);
-      setFlash({ type: 'success', message: 'Rental request rejected. Space is now available again.' });
-      refreshAll();
-    } catch (error) {
-      setFlash({ type: 'error', message: error.response?.data?.message || 'Error rejecting rental request.' });
-    }
-  };
-
-  const handleCancelRental = async (rentalId) => {
-    if (!window.confirm('Are you sure you want to cancel this rental? The space will become available again.')) return;
-    try {
-      await api.patch(`/rentals/${rentalId}/cancel`);
-      setFlash({ type: 'success', message: 'Rental cancelled. Space is now available.' });
-      refreshAll();
-    } catch (error) {
-      setFlash({ type: 'error', message: error.response?.data?.message || 'Error cancelling rental.' });
-    }
-  };
-
-  const handleCompleteRental = async (rentalId) => {
-    if (!window.confirm('Mark this rental as completed? The space will become available again for new tenants.')) return;
-    try {
-      await api.patch(`/rentals/${rentalId}/complete`);
-      setFlash({ type: 'success', message: 'Rental completed. Space is now available for new tenants.' });
-      refreshAll();
-    } catch (error) {
-      setFlash({ type: 'error', message: error.response?.data?.message || 'Error completing rental.' });
+      setFlash({ type: 'error', message: 'Failed to load market spaces.' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -152,14 +106,15 @@ const AdminSpaces = () => {
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       const data = new FormData();
-      data.append('space_number', formData.space_number);
-      data.append('location', formData.location);
+      data.append('space_number', formData.space_number.trim());
+      data.append('location', formData.location.trim());
       data.append('size_sqm', formData.size_sqm);
       data.append('monthly_rate', formData.monthly_rate);
       data.append('status', formData.status);
-      data.append('description', formData.description);
+      data.append('description', formData.description.trim());
       if (imageFile) {
         data.append('image', imageFile);
       }
@@ -168,25 +123,29 @@ const AdminSpaces = () => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      setFlash({ type: 'success', message: 'New market space created successfully.' });
+      setFlash({ type: 'success', message: `Market space '${formData.space_number}' created successfully.` });
       setIsCreateOpen(false);
       resetForm();
       fetchSpaces();
     } catch (error) {
       setFlash({ type: 'error', message: error.response?.data?.message || 'Error creating space.' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    if (!selectedSpace) return;
+    setIsSubmitting(true);
     try {
       const data = new FormData();
-      data.append('space_number', formData.space_number);
-      data.append('location', formData.location);
+      data.append('space_number', formData.space_number.trim());
+      data.append('location', formData.location.trim());
       data.append('size_sqm', formData.size_sqm);
       data.append('monthly_rate', formData.monthly_rate);
       data.append('status', formData.status);
-      data.append('description', formData.description);
+      data.append('description', formData.description.trim());
       if (imageFile) {
         data.append('image', imageFile);
       }
@@ -195,12 +154,30 @@ const AdminSpaces = () => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      setFlash({ type: 'success', message: 'Space details updated successfully.' });
+      setFlash({ type: 'success', message: `Space '${formData.space_number}' updated successfully.` });
       setIsEditOpen(false);
       resetForm();
       fetchSpaces();
     } catch (error) {
       setFlash({ type: 'error', message: error.response?.data?.message || 'Error updating space.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteSpace = async () => {
+    if (!selectedSpace) return;
+    setIsSubmitting(true);
+    try {
+      await api.delete(`/spaces/${selectedSpace.id}`);
+      setFlash({ type: 'success', message: `Market space '${selectedSpace.space_number}' deleted successfully.` });
+      setIsDeleteOpen(false);
+      setSelectedSpace(null);
+      fetchSpaces();
+    } catch (error) {
+      setFlash({ type: 'error', message: error.response?.data?.message || 'Error deleting space.' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -219,6 +196,11 @@ const AdminSpaces = () => {
     setIsEditOpen(true);
   };
 
+  const openDeleteModal = (s) => {
+    setSelectedSpace(s);
+    setIsDeleteOpen(true);
+  };
+
   const resetForm = () => {
     setFormData({
       space_number: '',
@@ -230,6 +212,7 @@ const AdminSpaces = () => {
     });
     setImageFile(null);
     setImagePreview(null);
+    setSelectedSpace(null);
     if (createFileInputRef.current) createFileInputRef.current.value = '';
     if (editFileInputRef.current) editFileInputRef.current.value = '';
   };
@@ -237,14 +220,15 @@ const AdminSpaces = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8" style={{ fontFamily: "'Work Sans', sans-serif" }}>
+        {/* Header with Create Market Space button */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl text-[#241C15] tracking-tight" style={displayStyle}>Market Space Inventory</h1>
-            <p className="text-sm text-[#241C15]/50 font-medium">Manage market stalls, rental rates, picture showcases, and pending lease assignments.</p>
+            <h1 className="text-2xl text-[#241C15] tracking-tight" style={displayStyle}>Market Spaces</h1>
+            <p className="text-sm text-[#241C15]/50 font-medium">Manage market stalls, lease rates, picture showcases, and add new spaces.</p>
           </div>
           <button
             onClick={() => { resetForm(); setIsCreateOpen(true); }}
-            className="px-6 py-3 rounded-xl bg-[#C1440E] hover:bg-[#a8390c] text-[#FBF6EA] font-bold text-sm shadow-lg shadow-[#C1440E]/25 flex items-center justify-center space-x-2 transition"
+            className="px-6 py-3 rounded-xl bg-[#C1440E] hover:bg-[#a8390c] text-[#FBF6EA] font-bold text-sm shadow-lg shadow-[#C1440E]/25 flex items-center justify-center space-x-2 transition cursor-pointer"
           >
             <Plus className="w-5 h-5" />
             <span>Create Market Space</span>
@@ -253,88 +237,68 @@ const AdminSpaces = () => {
 
         <FlashMessage type={flash.type} message={flash.message} onClose={() => setFlash({ type: '', message: '' })} />
 
-        {/* Pending Rental Approvals Queue */}
-        {pendingRentals.length > 0 && (
-          <div className="p-6 rounded-2xl bg-[#E8A33D]/8 border border-[#E8A33D]/30 space-y-4">
-            <div className="flex items-center space-x-2 text-[#8a5f1f] font-bold text-base">
-              <ShieldAlert className="w-5 h-5" />
-              <span>Pending Rental Approval Queue ({pendingRentals.length})</span>
+        {/* Space Stats Overview Pills */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          <div className="p-4 rounded-2xl bg-white border border-[#241C15]/8 shadow-sm flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-[#241C15]/8 text-[#241C15] flex items-center justify-center">
+              <Building2 className="w-5 h-5" />
             </div>
-
-            <div className="divide-y divide-[#E8A33D]/20">
-              {pendingRentals.map((pr) => (
-                <div key={pr.rental_id} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <p className="font-bold text-[#241C15]">{pr.first_name} {pr.last_name} ({pr.email})</p>
-                    <p className="text-xs text-[#241C15]/60 font-medium mt-1">
-                      Assigned to: <strong className="text-[#8a5f1f] font-bold">{pr.space_number}</strong> ({pr.location}) • Rate: {formatCurrency(pr.monthly_rate)}/yr
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={() => handleApproveRental(pr.rental_id)}
-                      className="px-4 py-2 rounded-xl bg-[#0F3D37] hover:bg-[#0c332e] text-[#FBF6EA] font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-[#0F3D37]/20 transition"
-                    >
-                      <Check className="w-4 h-4" />
-                      <span>Approve Rental</span>
-                    </button>
-                    <button
-                      onClick={() => handleRejectRental(pr.rental_id)}
-                      className="px-4 py-2 rounded-xl bg-[#C1440E] hover:bg-[#a8390c] text-[#FBF6EA] font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-[#C1440E]/20 transition"
-                    >
-                      <X className="w-4 h-4" />
-                      <span>Reject</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+            <div>
+              <p className="text-[11px] font-bold uppercase text-[#241C15]/40 tracking-wider">Total</p>
+              <p className="text-xl font-bold text-[#241C15]" style={monoStyle}>{stats.total || spaces.length}</p>
             </div>
           </div>
-        )}
 
-        {/* Active Rentals Management */}
-        {activeRentals.length > 0 && (
-          <div className="p-6 rounded-2xl bg-[#0F3D37]/5 border border-[#0F3D37]/15 space-y-4">
-            <div className="flex items-center space-x-2 text-[#0F3D37] font-bold text-base">
-              <Layers className="w-5 h-5" />
-              <span>Active Rentals ({activeRentals.length})</span>
+          <div className="p-4 rounded-2xl bg-white border border-emerald-200/60 shadow-sm flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-700 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5" />
             </div>
-
-            <div className="divide-y divide-[#0F3D37]/10">
-              {activeRentals.map((ar) => (
-                <div key={ar.id} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <p className="font-bold text-[#241C15]">{ar.first_name} {ar.last_name} ({ar.email})</p>
-                    <p className="text-xs text-[#241C15]/60 font-medium mt-1">
-                      Space: <strong className="text-[#0F3D37] font-bold">{ar.space_number}</strong> ({ar.location}) • Rate: {formatCurrency(ar.monthly_rate)}/yr
-                    </p>
-                    <p className="text-xs text-[#241C15]/50 mt-0.5">
-                      Period: {ar.start_date} → {ar.end_date || 'N/A'}
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={() => handleCompleteRental(ar.id)}
-                      className="px-4 py-2 rounded-xl bg-[#0F3D37] hover:bg-[#0c332e] text-[#FBF6EA] font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-[#0F3D37]/20 transition"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      <span>Complete</span>
-                    </button>
-                    <button
-                      onClick={() => handleCancelRental(ar.id)}
-                      className="px-4 py-2 rounded-xl bg-[#C1440E] hover:bg-[#a8390c] text-[#FBF6EA] font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-[#C1440E]/20 transition"
-                    >
-                      <Ban className="w-4 h-4" />
-                      <span>Cancel</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+            <div>
+              <p className="text-[11px] font-bold uppercase text-emerald-800/60 tracking-wider">Available</p>
+              <p className="text-xl font-bold text-emerald-700" style={monoStyle}>
+                {stats.available !== undefined ? stats.available : spaces.filter(s => s.status === 'available').length}
+              </p>
             </div>
           </div>
-        )}
 
-        {/* Filter and Search */}
+          <div className="p-4 rounded-2xl bg-white border border-amber-200/60 shadow-sm flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-400/20 text-amber-700 flex items-center justify-center">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold uppercase text-amber-800/60 tracking-wider">Reserved</p>
+              <p className="text-xl font-bold text-amber-700" style={monoStyle}>
+                {stats.reserved !== undefined ? stats.reserved : spaces.filter(s => s.status === 'reserved').length}
+              </p>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-white border border-red-200/60 shadow-sm flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-red-500/15 text-red-700 flex items-center justify-center">
+              <Store className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold uppercase text-red-800/60 tracking-wider">Rented</p>
+              <p className="text-xl font-bold text-red-700" style={monoStyle}>
+                {stats.rented !== undefined ? stats.rented : spaces.filter(s => s.status === 'rented').length}
+              </p>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-white border border-orange-200/60 shadow-sm flex items-center space-x-3 col-span-2 sm:col-span-1">
+            <div className="w-10 h-10 rounded-xl bg-orange-500/15 text-orange-700 flex items-center justify-center">
+              <Wrench className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold uppercase text-orange-800/60 tracking-wider">Maintenance</p>
+              <p className="text-xl font-bold text-orange-700" style={monoStyle}>
+                {stats.maintenance !== undefined ? stats.maintenance : spaces.filter(s => s.status === 'maintenance').length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter and Search Bar */}
         <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-2xl border border-[#241C15]/8 shadow-sm">
           <div className="relative flex-1 w-full">
             <Search className="w-5 h-5 absolute left-4 top-3 text-[#241C15]/30" />
@@ -349,7 +313,7 @@ const AdminSpaces = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full sm:w-48 px-4 py-2.5 rounded-xl bg-[#F6EFDE] border border-[#241C15]/10 text-sm font-semibold text-[#241C15]/80 focus:outline-none"
+            className="w-full sm:w-48 px-4 py-2.5 rounded-xl bg-[#F6EFDE] border border-[#241C15]/10 text-sm font-semibold text-[#241C15]/80 focus:outline-none cursor-pointer"
           >
             <option value="all">All Space Status</option>
             <option value="available">Available</option>
@@ -360,49 +324,99 @@ const AdminSpaces = () => {
         </div>
 
         {/* Spaces Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {spaces.map((s) => (
-            <div key={s.id} className="bg-white rounded-2xl overflow-hidden border border-[#241C15]/8 shadow-sm hover:shadow-md transition flex flex-col justify-between group">
-              <div className="relative h-44 w-full overflow-hidden bg-[#F6EFDE]">
-                <img
-                  src={getSpaceImageUrl(s.image, s.space_number)}
-                  alt={s.space_number}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                />
-                <div className="absolute top-3 right-3">
-                  <StatusBadge status={s.status} />
-                </div>
-                <div className="absolute bottom-3 left-3 bg-[#241C15]/85 px-3 py-1 rounded-md text-xs font-black text-[#FBF6EA]">
-                  {s.space_number}
-                </div>
-              </div>
-
-              <div className="p-5 space-y-4 flex-1 flex flex-col justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm font-bold text-[#241C15]">{s.location}</p>
-                  <p className="text-xs text-[#241C15]/50 line-clamp-2 leading-relaxed">{s.description}</p>
-                </div>
-                <div className="pt-3 border-t-2 border-dashed border-[#C1440E]/20 flex justify-between items-center text-xs">
-                  <span className="text-[#241C15]/50">Size: <strong className="text-[#241C15]">{s.size_sqm} sqm</strong></span>
-                  <span className="text-[#C1440E] font-bold text-sm" style={monoStyle}>{formatCurrency(s.monthly_rate)} / yr</span>
-                </div>
-
-                <button
-                  onClick={() => openEditModal(s)}
-                  className="w-full py-2.5 rounded-xl bg-[#241C15]/5 hover:bg-[#0F3D37] hover:text-[#FBF6EA] text-[#241C15] font-bold text-xs border border-[#241C15]/10 hover:border-[#0F3D37] transition flex items-center justify-center space-x-2"
-                >
-                  <Edit className="w-4 h-4" />
-                  <span>Edit Space Details</span>
-                </button>
-              </div>
+        {loading ? (
+          <div className="text-center py-16 text-[#241C15]/50">
+            <div className="w-8 h-8 border-3 border-[#C1440E] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            <p className="font-semibold text-sm">Loading market spaces...</p>
+          </div>
+        ) : spaces.length === 0 ? (
+          <div className="bg-white rounded-2xl p-12 text-center border border-[#241C15]/8 shadow-sm space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-[#F6EFDE] flex items-center justify-center mx-auto text-[#241C15]/40">
+              <Store className="w-8 h-8" />
             </div>
-          ))}
-        </div>
+            <div>
+              <h3 className="text-base font-bold text-[#241C15]">No market spaces found</h3>
+              <p className="text-xs text-[#241C15]/50 mt-1">
+                {search || statusFilter !== 'all'
+                  ? 'Try adjusting your search query or filter.'
+                  : 'Start by creating your first market space.'}
+              </p>
+            </div>
+            <button
+              onClick={() => { resetForm(); setIsCreateOpen(true); }}
+              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-[#C1440E] hover:bg-[#a8390c] text-[#FBF6EA] font-bold text-xs shadow-md shadow-[#C1440E]/20 transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Market Space</span>
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {spaces.map((s) => (
+              <div
+                key={s.id}
+                className="bg-white rounded-2xl overflow-hidden border border-[#241C15]/8 shadow-sm hover:shadow-md transition flex flex-col justify-between group"
+              >
+                <div className="relative h-44 w-full overflow-hidden bg-[#F6EFDE]">
+                  <img
+                    src={getSpaceImageUrl(s.image, s.space_number)}
+                    alt={s.space_number}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  <div className="absolute top-3 right-3">
+                    <StatusBadge status={s.status} />
+                  </div>
+                  <div className="absolute bottom-3 left-3 bg-[#241C15]/85 px-3 py-1 rounded-md text-xs font-black text-[#FBF6EA]">
+                    {s.space_number}
+                  </div>
+                </div>
+
+                <div className="p-5 space-y-4 flex-1 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <p className="text-sm font-bold text-[#241C15]">{s.location || 'Duero Public Market'}</p>
+                    <p className="text-xs text-[#241C15]/50 line-clamp-2 leading-relaxed">
+                      {s.description || 'Standard municipal market stall unit.'}
+                    </p>
+                  </div>
+                  <div className="pt-3 border-t-2 border-dashed border-[#C1440E]/20 flex justify-between items-center text-xs">
+                    <span className="text-[#241C15]/50">
+                      Size: <strong className="text-[#241C15]">{s.size_sqm} sqm</strong>
+                    </span>
+                    <span className="text-[#C1440E] font-bold text-sm" style={monoStyle}>
+                      {formatCurrency(s.monthly_rate)} / yr
+                    </span>
+                  </div>
+
+                  <div className="pt-1 flex space-x-2">
+                    <button
+                      onClick={() => openEditModal(s)}
+                      className="flex-1 py-2.5 rounded-xl bg-[#241C15]/5 hover:bg-[#0F3D37] hover:text-[#FBF6EA] text-[#241C15] font-bold text-xs border border-[#241C15]/10 hover:border-[#0F3D37] transition flex items-center justify-center space-x-1.5"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                      <span>Edit Details</span>
+                    </button>
+                    <button
+                      onClick={() => openDeleteModal(s)}
+                      className="p-2.5 rounded-xl bg-[#241C15]/5 hover:bg-[#C1440E] hover:text-[#FBF6EA] text-[#241C15]/50 hover:text-[#FBF6EA] border border-[#241C15]/10 transition flex items-center justify-center"
+                      title="Delete Space"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Create Modal */}
-      <Modal isOpen={isCreateOpen} onClose={() => { resetForm(); setIsCreateOpen(false); }} title="Create Market Space">
+      <Modal
+        isOpen={isCreateOpen}
+        onClose={() => { resetForm(); setIsCreateOpen(false); }}
+        title="Create Market Space"
+      >
         <form onSubmit={handleCreateSubmit} className="space-y-4">
           {/* Picture Upload Field */}
           <div>
@@ -458,6 +472,7 @@ const AdminSpaces = () => {
               className={modalInputClass}
             />
           </div>
+
           <div>
             <label className={modalLabelClass}>Location / Section</label>
             <input
@@ -468,12 +483,15 @@ const AdminSpaces = () => {
               className={modalInputClass}
             />
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={modalLabelClass}>Size (sqm)</label>
               <input
                 type="number"
                 step="0.1"
+                min="0"
+                placeholder="12.5"
                 value={formData.size_sqm}
                 onChange={(e) => setFormData({ ...formData, size_sqm: e.target.value })}
                 className={modalInputClass}
@@ -484,16 +502,33 @@ const AdminSpaces = () => {
               <input
                 type="number"
                 required
+                min="0"
+                step="0.01"
+                placeholder="12000"
                 value={formData.monthly_rate}
                 onChange={(e) => setFormData({ ...formData, monthly_rate: e.target.value })}
                 className={modalInputClass + " font-semibold"}
               />
             </div>
           </div>
+
+          <div>
+            <label className={modalLabelClass}>Initial Status</label>
+            <select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              className={modalInputClass + " font-semibold cursor-pointer"}
+            >
+              <option value="available">Available</option>
+              <option value="maintenance">Maintenance</option>
+            </select>
+          </div>
+
           <div>
             <label className={modalLabelClass}>Description</label>
             <textarea
               rows="3"
+              placeholder="Details about the space, commodities allowed, electrical outlets, etc."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className={modalInputClass}
@@ -510,16 +545,22 @@ const AdminSpaces = () => {
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-[#C1440E] hover:bg-[#a8390c] text-[#FBF6EA] font-bold text-sm shadow-lg shadow-[#C1440E]/25 transition"
+              disabled={isSubmitting}
+              className="px-6 py-2.5 rounded-xl bg-[#C1440E] hover:bg-[#a8390c] text-[#FBF6EA] font-bold text-sm shadow-lg shadow-[#C1440E]/25 transition flex items-center space-x-2"
             >
-              Create Market Space
+              <Plus className="w-4 h-4" />
+              <span>{isSubmitting ? 'Creating...' : 'Create Market Space'}</span>
             </button>
           </div>
         </form>
       </Modal>
 
       {/* Edit Modal */}
-      <Modal isOpen={isEditOpen} onClose={() => { resetForm(); setIsEditOpen(false); }} title="Edit Market Space">
+      <Modal
+        isOpen={isEditOpen}
+        onClose={() => { resetForm(); setIsEditOpen(false); }}
+        title={`Edit Market Space — ${selectedSpace?.space_number}`}
+      >
         <form onSubmit={handleEditSubmit} className="space-y-4">
           {/* Picture Upload Field */}
           <div>
@@ -566,7 +607,7 @@ const AdminSpaces = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={modalLabelClass}>Space Number</label>
+              <label className={modalLabelClass}>Space Number *</label>
               <input
                 type="text"
                 required
@@ -580,7 +621,7 @@ const AdminSpaces = () => {
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className={modalInputClass + " font-semibold"}
+                className={modalInputClass + " font-semibold cursor-pointer"}
               >
                 <option value="available">available</option>
                 <option value="reserved">reserved</option>
@@ -589,6 +630,7 @@ const AdminSpaces = () => {
               </select>
             </div>
           </div>
+
           <div>
             <label className={modalLabelClass}>Location</label>
             <input
@@ -598,28 +640,33 @@ const AdminSpaces = () => {
               className={modalInputClass}
             />
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={modalLabelClass}>Size (sqm)</label>
               <input
                 type="number"
                 step="0.1"
+                min="0"
                 value={formData.size_sqm}
                 onChange={(e) => setFormData({ ...formData, size_sqm: e.target.value })}
                 className={modalInputClass}
               />
             </div>
             <div>
-              <label className={modalLabelClass}>Yearly Rate (₱)</label>
+              <label className={modalLabelClass}>Yearly Rate (₱) *</label>
               <input
                 type="number"
                 required
+                min="0"
+                step="0.01"
                 value={formData.monthly_rate}
                 onChange={(e) => setFormData({ ...formData, monthly_rate: e.target.value })}
                 className={modalInputClass + " font-semibold"}
               />
             </div>
           </div>
+
           <div>
             <label className={modalLabelClass}>Description</label>
             <textarea
@@ -640,12 +687,57 @@ const AdminSpaces = () => {
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-[#C1440E] hover:bg-[#a8390c] text-[#FBF6EA] font-bold text-sm shadow-lg shadow-[#C1440E]/25 transition"
+              disabled={isSubmitting}
+              className="px-6 py-2.5 rounded-xl bg-[#C1440E] hover:bg-[#a8390c] text-[#FBF6EA] font-bold text-sm shadow-lg shadow-[#C1440E]/25 transition flex items-center space-x-2"
             >
-              Save Changes
+              <Edit className="w-4 h-4" />
+              <span>{isSubmitting ? 'Saving...' : 'Save Changes'}</span>
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteOpen}
+        onClose={() => { setIsDeleteOpen(false); setSelectedSpace(null); }}
+        title="Confirm Space Deletion"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-5 text-center sm:text-left">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-3 sm:space-y-0 sm:space-x-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#C1440E]/12 text-[#C1440E] flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <div>
+              <h4 className="text-base font-bold text-[#241C15]">
+                Delete Market Space {selectedSpace?.space_number}?
+              </h4>
+              <p className="text-xs text-[#241C15]/60 mt-1 leading-relaxed">
+                Are you sure you want to permanently delete <strong>{selectedSpace?.space_number}</strong> ({selectedSpace?.location})? This action cannot be undone.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-2 flex flex-col-reverse sm:flex-row justify-end gap-2.5">
+            <button
+              type="button"
+              onClick={() => { setIsDeleteOpen(false); setSelectedSpace(null); }}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#241C15]/8 hover:bg-[#241C15]/12 text-[#241C15]/70 font-bold text-sm transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteSpace}
+              disabled={isSubmitting}
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#C1440E] hover:bg-[#a8390c] text-[#FBF6EA] font-bold text-sm shadow-lg shadow-[#C1440E]/25 flex items-center justify-center space-x-2 transition"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>{isSubmitting ? 'Deleting...' : 'Yes, Delete Space'}</span>
+            </button>
+          </div>
+        </div>
       </Modal>
     </DashboardLayout>
   );

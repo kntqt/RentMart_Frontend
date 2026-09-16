@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import FlashMessage from '../../components/ui/FlashMessage';
-import { Lock, Mail, ArrowLeft } from 'lucide-react';
+import { Lock, Mail, ArrowLeft, Loader2 } from 'lucide-react';
 
 import logoImg from '../../assets/logo.jpg';
 
@@ -28,6 +28,8 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [redirectUser, setRedirectUser] = useState(null);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -39,13 +41,18 @@ const Login = () => {
 
     try {
       const user = await login(email, password);
-      if (user.role === 'admin') navigate('/admin/dashboard');
-      else if (user.role === 'staff') navigate('/staff/dashboard');
-      else if (user.role === 'renter') navigate('/renter/dashboard');
-      else navigate('/');
+      setRedirectUser(user);
+      setIsRedirecting(true);
+
+      // 3-second loading transition before redirecting
+      setTimeout(() => {
+        if (user.role === 'admin') navigate('/admin/dashboard');
+        else if (user.role === 'staff') navigate('/staff/dashboard');
+        else if (user.role === 'renter') navigate('/renter/dashboard');
+        else navigate('/');
+      }, 3000);
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid credentials or inactive account.');
-    } finally {
       setLoading(false);
     }
   };
@@ -66,7 +73,42 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-[#0F3D37] text-[#241C15] flex items-center justify-center p-6 relative overflow-hidden" style={{ fontFamily: "'Work Sans', sans-serif" }}>
-      {/* Awning stripe accents in the corners instead of glow blobs */}
+      {/* 3-Second Fullscreen Loading Screen on Sign In */}
+      {isRedirecting && (
+        <div className="fixed inset-0 z-50 bg-[#0F3D37]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="bg-[#FBF6EA] rounded-3xl p-8 border-2 border-dashed border-[#C1440E]/40 shadow-2xl max-w-sm w-full text-center space-y-6 animate-in zoom-in-95 duration-300">
+            <div className="relative w-24 h-24 mx-auto">
+              <img src={logoImg} alt="RentMart" className="w-24 h-24 rounded-full object-cover shadow-xl border-2 border-[#C1440E]" />
+              <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-[#C1440E] text-white flex items-center justify-center shadow-lg">
+                <Loader2 className="w-5 h-5 animate-spin" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-xl text-[#241C15]" style={{ fontFamily: "'Archivo Black', sans-serif" }}>
+                Signing In...
+              </h3>
+              <p className="text-xs text-[#241C15]/60 font-medium">
+                Welcome back, <strong>{redirectUser?.first_name}</strong>! Preparing your <span className="uppercase text-[#C1440E] font-bold">{redirectUser?.role}</span> workspace.
+              </p>
+            </div>
+
+            {/* 3-Second Animated Progress Bar */}
+            <div className="w-full bg-[#241C15]/10 h-2 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-[#E8A33D] to-[#C1440E] rounded-full"
+                style={{
+                  width: '100%',
+                  animation: 'fillProgress 3s linear forwards'
+                }}
+              />
+            </div>
+            <p className="text-[11px] text-[#241C15]/40 font-mono">Redirecting in 3 seconds...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Awning stripe accents in the corners */}
       <div
         aria-hidden="true"
         className="w-96 h-96 absolute -top-16 -left-16 opacity-20 rotate-12"
@@ -131,7 +173,7 @@ const Login = () => {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isRedirecting}
               className="w-full py-3.5 rounded-xl bg-[#C1440E] hover:bg-[#a8390c] text-[#FBF6EA] font-bold text-sm shadow-xl shadow-[#C1440E]/25 transition transform active:scale-[0.98] disabled:opacity-50"
             >
               {loading ? 'Authenticating...' : 'Sign In to Portal'}
@@ -176,6 +218,13 @@ const Login = () => {
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes fillProgress {
+          from { width: 0%; }
+          to { width: 100%; }
+        }
+      `}</style>
     </div>
   );
 };

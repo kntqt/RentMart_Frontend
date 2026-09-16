@@ -80,7 +80,7 @@ const RenterSpaces = () => {
         start_date: startDate,
         end_date: endDate || undefined
       });
-      setFlash({ type: 'success', message: res.data.message || `Rental request for ${rentTarget.space_number} submitted successfully! Awaiting admin approval.` });
+      setFlash({ type: 'success', message: res.data.message || `Rental request for ${rentTarget.space_number} submitted successfully! Awaiting staff approval.` });
       setIsRentModalOpen(false);
       setSelectedSpace(null);
       fetchSpaces();
@@ -315,7 +315,7 @@ const RenterSpaces = () => {
               </div>
 
               <div className="p-3 rounded-lg bg-[#E8A33D]/8 border border-[#E8A33D]/25 text-xs text-[#8a5f1f] font-medium">
-                <strong>Note:</strong> Your rental request will be submitted for admin review. The space will be reserved for you while pending approval.
+                <strong>Note:</strong> Your rental request will be submitted for staff review and approval. The space will be reserved for you while pending approval.
               </div>
 
               <div className="pt-2 flex justify-end space-x-3">

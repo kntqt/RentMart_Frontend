@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { formatCurrency, getSpaceImageUrl } from "../../utils/formatters";
-import { Store, ShieldCheck, FileText, ArrowRight, Phone, Mail, MapPin, Eye, UserPlus, Lock, Ticket } from "lucide-react";
+import { Store, ShieldCheck, FileText, ArrowRight, Phone, Mail, MapPin, Eye, UserPlus, Lock, Ticket, Sparkles, Zap, Building2 } from "lucide-react";
 import Modal from "../../components/ui/Modal";
 import StatusBadge from "../../components/ui/StatusBadge";
 
 import logoImg from "../../assets/logo.jpg";
 
-// Inject keyframes for the word-swap animation once
+// Inject keyframes for animations
 const useWordSwapStyles = () => {
   useEffect(() => {
     if (document.getElementById("rentmart-word-swap-styles")) return;
@@ -39,6 +39,38 @@ const useWordSwapStyles = () => {
           filter: blur(4px);
         }
       }
+      @keyframes floatSlow {
+        0%, 100% {
+          transform: translateY(0px) rotate(0deg);
+        }
+        50% {
+          transform: translateY(-10px) rotate(0.6deg);
+        }
+      }
+      @keyframes floatSatellite1 {
+        0%, 100% {
+          transform: translateY(0px) rotate(-1.5deg);
+        }
+        50% {
+          transform: translateY(-8px) rotate(-0.5deg);
+        }
+      }
+      @keyframes floatSatellite2 {
+        0%, 100% {
+          transform: translateY(0px) rotate(1.5deg);
+        }
+        50% {
+          transform: translateY(8px) rotate(0.5deg);
+        }
+      }
+      @keyframes spinSlow {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
       .word-swap-enter {
         animation: wordFadeSlideIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
       }
@@ -47,6 +79,18 @@ const useWordSwapStyles = () => {
         position: absolute;
         left: 0;
         top: 0;
+      }
+      .animate-float-slow {
+        animation: floatSlow 5s ease-in-out infinite;
+      }
+      .animate-satellite-1 {
+        animation: floatSatellite1 4s ease-in-out infinite;
+      }
+      .animate-satellite-2 {
+        animation: floatSatellite2 4.5s ease-in-out infinite 0.8s;
+      }
+      .animate-spin-slow {
+        animation: spinSlow 22s linear infinite;
       }
     `;
     document.head.appendChild(style);
@@ -250,17 +294,106 @@ const Landing = () => {
             </div>
           </div>
 
-          {/* Hero badge card */}
-          <div className="flex justify-center relative">
-            <div className="w-64 h-64 sm:w-80 sm:h-80 bg-[#FBF6EA] rounded-[2rem] p-8 border-4 border-[#E8A33D] shadow-2xl flex flex-col items-center justify-center space-y-6 text-center rotate-2">
-              <img src={logoImg} alt="RentMart System Logo" className="w-24 h-24 rounded-full object-cover shadow-2xl border-2 border-[#C1440E]" />
-              <div>
-                <h3 className="text-xl text-[#241C15]" style={{ fontFamily: "'Archivo Black', sans-serif" }}>RentMart System</h3>
-                <p className="text-xs text-[#241C15]/60 font-medium mt-1">Commercial Spaces Management</p>
+          {/* Hero badge card showcase */}
+          <div className="flex justify-center items-center relative py-6 lg:py-0">
+            {/* Ambient Background Glow Blobs */}
+            <div className="absolute -top-10 -left-10 w-72 h-72 bg-[#5DCAA5]/25 rounded-full blur-3xl pointer-events-none animate-pulse" />
+            <div className="absolute -bottom-10 -right-10 w-80 h-80 bg-[#E8A33D]/25 rounded-full blur-3xl pointer-events-none animate-pulse" style={{ animationDelay: '1.5s' }} />
+            <div className="absolute inset-0 m-auto w-64 h-64 bg-[#C1440E]/20 rounded-full blur-2xl pointer-events-none" />
+
+            {/* Floating Satellite Badge 1 (Top-Right) */}
+            <div className="absolute -top-3 -right-2 sm:-right-6 z-20 animate-satellite-1">
+              <div className="flex items-center space-x-2.5 px-4 py-2 rounded-2xl bg-[#0F3D37]/90 backdrop-blur-md border border-[#5DCAA5]/40 text-[#FBF6EA] shadow-xl text-xs font-semibold">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#5DCAA5] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#5DCAA5]"></span>
+                </span>
+                <span className="tracking-wide">System Online • v2.4</span>
               </div>
-              <div className="px-4 py-1.5 rounded-full bg-[#0F3D37]/10 border-2 border-[#0F3D37]/30 text-[#0F3D37] text-xs font-bold uppercase tracking-wide">
-                Market Digital CSS Active
+            </div>
+
+            {/* Floating Satellite Badge 2 (Bottom-Left) */}
+            <div className="absolute -bottom-4 -left-2 sm:-left-6 z-20 animate-satellite-2">
+              <div className="flex items-center space-x-2 px-4 py-2.5 rounded-2xl bg-[#FBF6EA]/95 backdrop-blur-md border-2 border-[#E8A33D] text-[#241C15] shadow-2xl text-xs font-bold">
+                <ShieldCheck className="w-4 h-4 text-[#C1440E]" />
+                <span>Municipal Verified Portal</span>
               </div>
+            </div>
+
+            {/* Floating Satellite Badge 3 (Top-Left Micro Tag) */}
+            <div className="hidden sm:flex absolute top-6 -left-6 z-20 animate-satellite-2">
+              <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-[#E8A33D] text-[#241C15] font-black text-[11px] shadow-lg uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5 text-[#C1440E]" />
+                <span>Official Hub</span>
+              </div>
+            </div>
+
+            {/* Main Central Card */}
+            <div className="animate-float-slow w-full max-w-[380px] sm:max-w-[440px] bg-gradient-to-b from-[#FFFDF8] via-[#FAF3E0] to-[#F5E8CE] rounded-[2.5rem] p-8 sm:p-10 border-4 border-[#E8A33D] ring-8 ring-[#E8A33D]/20 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] flex flex-col items-center justify-center space-y-6 text-center relative z-10 transition-all duration-300 hover:shadow-[0_30px_70px_-10px_rgba(232,163,61,0.3)]">
+
+              {/* Decorative Corner Accents */}
+              <div className="absolute top-4 left-4 w-3.5 h-3.5 border-t-2 border-l-2 border-[#C1440E]/50 rounded-tl" />
+              <div className="absolute top-4 right-4 w-3.5 h-3.5 border-t-2 border-r-2 border-[#C1440E]/50 rounded-tr" />
+              <div className="absolute bottom-4 left-4 w-3.5 h-3.5 border-b-2 border-l-2 border-[#C1440E]/50 rounded-bl" />
+              <div className="absolute bottom-4 right-4 w-3.5 h-3.5 border-b-2 border-r-2 border-[#C1440E]/50 rounded-br" />
+
+              {/* Logo Presentation with Concentric Orbital Glow */}
+              <div className="relative group my-2">
+                {/* Dashed Orbital Rotating Ring */}
+                <div className="absolute -inset-4 rounded-full border-2 border-dashed border-[#E8A33D]/60 animate-spin-slow pointer-events-none" />
+
+                {/* Glow Behind Logo */}
+                <div className="absolute -inset-2 rounded-full bg-gradient-to-tr from-[#C1440E] via-[#E8A33D] to-[#5DCAA5] blur-md opacity-70 group-hover:opacity-100 transition duration-500" />
+
+                {/* Logo Frame */}
+                <div className="relative p-1.5 rounded-full bg-gradient-to-tr from-[#C1440E] to-[#E8A33D] shadow-2xl">
+                  <div className="p-1 rounded-full bg-[#FAF3E0]">
+                    <img
+                      src={logoImg}
+                      alt="RentMart System Logo"
+                      className="w-28 h-28 sm:w-36 sm:h-36 rounded-full object-cover shadow-inner transform group-hover:scale-105 transition duration-300"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Headings */}
+              <div className="space-y-1.5">
+                <h3
+                  className="text-2xl sm:text-3xl text-[#241C15] font-black tracking-tight"
+                  style={{ fontFamily: "'Archivo Black', sans-serif" }}
+                >
+                  RentMart System
+                </h3>
+                <p className="text-xs sm:text-sm text-[#241C15]/70 font-semibold tracking-wide">
+                  Commercial Spaces &amp; Lease Management
+                </p>
+              </div>
+
+              {/* Status Badge Pill */}
+              <div className="inline-flex items-center space-x-2.5 px-5 py-2.5 rounded-full bg-[#0F3D37] text-[#FBF6EA] border border-[#5DCAA5]/40 shadow-lg shadow-[#0F3D37]/30 hover:bg-[#144d46] transition-all">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#5DCAA5] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#5DCAA5]"></span>
+                </span>
+                <span className="text-xs font-bold uppercase tracking-widest text-[#5DCAA5]">
+                  Market Digital CSS Active
+                </span>
+              </div>
+
+              {/* Micro-Features Bottom Bar inside Card */}
+              <div className="w-full pt-3 border-t border-[#241C15]/10 grid grid-cols-3 gap-2 text-center text-[10px] sm:text-[11px] font-bold text-[#241C15]/75">
+                <div className="p-2 rounded-xl bg-[#241C15]/5 hover:bg-[#241C15]/10 transition flex items-center justify-center space-x-1">
+                  <span>🏪 Stalls</span>
+                </div>
+                <div className="p-2 rounded-xl bg-[#241C15]/5 hover:bg-[#241C15]/10 transition flex items-center justify-center space-x-1">
+                  <span>🧾 Billing</span>
+                </div>
+                <div className="p-2 rounded-xl bg-[#241C15]/5 hover:bg-[#241C15]/10 transition flex items-center justify-center space-x-1">
+                  <span>📊 Audit</span>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
