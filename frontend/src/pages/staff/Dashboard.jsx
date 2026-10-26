@@ -60,31 +60,40 @@ const StaffDashboard = () => {
     }
   };
 
-  const handleApproveRental = async (rentalId) => {
+  const handleApproveRental = async (pr) => {
+    const unpaidBal = parseFloat(pr.renter_unpaid_balance || 0);
+    if (unpaidBal > 0) {
+      setFlash({
+        type: 'error',
+        message: `Payment Restriction: Cannot confirm reservation for ${pr.first_name} ${pr.last_name}. Outstanding unpaid balance of ${formatCurrency(unpaidBal)} must be settled first.`
+      });
+      return;
+    }
+
     try {
-      await api.patch(`/rentals/${rentalId}/approve`);
-      setFlash({ type: 'success', message: 'Rental request approved! Space is now set to Rented.' });
+      await api.patch(`/rentals/${pr.rental_id}/approve`);
+      setFlash({ type: 'success', message: `Reservation approved for stall ${pr.space_number}! Space marked as rented.` });
       fetchDashboardData();
     } catch (error) {
-      setFlash({ type: 'error', message: error.response?.data?.message || 'Error approving rental.' });
+      setFlash({ type: 'error', message: error.response?.data?.message || 'Error approving reservation.' });
     }
   };
 
   const handleRejectRental = async (rentalId) => {
-    if (!window.confirm('Are you sure you want to reject this rental request?')) return;
+    if (!window.confirm('Are you sure you want to reject this reservation request?')) return;
     try {
       await api.patch(`/rentals/${rentalId}/reject`);
-      setFlash({ type: 'success', message: 'Rental request rejected. Space returned to available.' });
+      setFlash({ type: 'success', message: 'Reservation request rejected. Space returned to available.' });
       fetchDashboardData();
     } catch (error) {
-      setFlash({ type: 'error', message: error.response?.data?.message || 'Error rejecting rental.' });
+      setFlash({ type: 'error', message: error.response?.data?.message || 'Error rejecting reservation.' });
     }
   };
 
   const kpiCards = [
     { label: 'Available Spaces', value: stats.availableSpaces, icon: Store, accent: '#0F3D37', note: 'Ready for Lease' },
     { label: 'Rented Units', value: stats.rentedSpaces, icon: Users, accent: '#C1440E', note: 'Active Market Vendors' },
-    { label: 'Pending Rentals', value: stats.pendingRentals, icon: Clock, accent: '#E8A33D', note: 'Requires Staff Action', noteIcon: true },
+    { label: 'Pending Reservations', value: stats.pendingRentals, icon: Clock, accent: '#E8A33D', note: 'Requires Staff Action', noteIcon: true },
     { label: 'Payments Today', value: formatCurrency(stats.paymentsToday), icon: DollarSign, accent: '#8a5f1f', note: 'Collected Today', noteIcon: true },
   ];
 
@@ -93,7 +102,7 @@ const StaffDashboard = () => {
       <div className="space-y-8" style={{ fontFamily: "'Work Sans', sans-serif" }}>
         <div>
           <h1 className="text-2xl text-[#241C15] tracking-tight" style={displayStyle}>Staff Operational Dashboard</h1>
-          <p className="text-sm text-[#241C15]/50 font-medium">Daily stall operations, lease processing, and market collection management.</p>
+          <p className="text-sm text-[#241C15]/50 font-medium">Daily stall operations, reservation processing, and market collection management.</p>
         </div>
 
         <FlashMessage type={flash.type} message={flash.message} onClose={() => setFlash({ type: '', message: '' })} />
@@ -130,8 +139,8 @@ const StaffDashboard = () => {
                   <ShieldAlert className="w-5 h-5 text-[#C1440E]" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[#241C15]">Rented Space Approval Tasks ({pendingList.length})</h3>
-                  <p className="text-xs text-[#241C15]/50">Action required: Approve or reject stall requests submitted by renters.</p>
+                  <h3 className="text-base font-bold text-[#241C15]">Stall Reservation Approval Tasks ({pendingList.length})</h3>
+                  <p className="text-xs text-[#241C15]/50">Action required: Verify payment status and approve or reject 6-month stall reservations.</p>
                 </div>
               </div>
               <Link
@@ -144,38 +153,56 @@ const StaffDashboard = () => {
             </div>
 
             <div className="divide-y divide-[#241C15]/8">
-              {pendingList.slice(0, 3).map((pr) => (
-                <div key={pr.rental_id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="px-2 py-0.5 rounded bg-[#241C15] text-[#FBF6EA] font-black text-xs">
-                        {pr.space_number}
-                      </span>
-                      <p className="text-sm font-bold text-[#241C15]">{pr.first_name} {pr.last_name}</p>
-                      <span className="text-xs text-[#241C15]/50">({pr.email})</span>
+              {pendingList.slice(0, 3).map((pr) => {
+                const hasUnpaid = parseFloat(pr.renter_unpaid_balance || 0) > 0;
+
+                return (
+                  <div key={pr.rental_id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center space-x-2 flex-wrap gap-1">
+                        <span className="px-2 py-0.5 rounded bg-[#241C15] text-[#FBF6EA] font-black text-xs">
+                          {pr.space_number}
+                        </span>
+                        <p className="text-sm font-bold text-[#241C15]">{pr.first_name} {pr.last_name}</p>
+                        <span className="text-xs text-[#241C15]/50">({pr.email})</span>
+                        {hasUnpaid ? (
+                          <span className="px-2 py-0.5 rounded-full bg-[#C1440E]/15 text-[#C1440E] text-[10px] font-bold">
+                            ⚠ Unpaid: {formatCurrency(pr.renter_unpaid_balance)} (Blocked)
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full bg-[#0F3D37]/15 text-[#0F3D37] text-[10px] font-bold">
+                            ✓ Clean Balance
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[#241C15]/60 mt-1">
+                        Rate: <strong className="text-[#C1440E]">{formatCurrency(pr.monthly_rate)}/yr</strong> • Lease: <strong>{pr.start_date}</strong> → <strong>{pr.end_date || '6 Mos+'}</strong>
+                      </p>
                     </div>
-                    <p className="text-xs text-[#241C15]/60 mt-1">
-                      Rate: <strong className="text-[#C1440E]">{formatCurrency(pr.monthly_rate)}/yr</strong> • Requested: {pr.start_date}
-                    </p>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleApproveRental(pr)}
+                        className={`px-3.5 py-1.5 rounded-lg font-bold text-xs flex items-center space-x-1 shadow-sm transition cursor-pointer ${
+                          hasUnpaid
+                            ? 'bg-[#241C15]/20 text-[#241C15]/40 cursor-not-allowed shadow-none'
+                            : 'bg-[#0F3D37] hover:bg-[#0c332e] text-[#FBF6EA]'
+                        }`}
+                        title={hasUnpaid ? 'Cannot approve: Unpaid balance exists' : 'Approve reservation'}
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>{hasUnpaid ? 'Blocked' : 'Approve'}</span>
+                      </button>
+                      <button
+                        onClick={() => handleRejectRental(pr.rental_id)}
+                        className="px-3.5 py-1.5 rounded-lg bg-[#C1440E] hover:bg-[#a8390c] text-[#FBF6EA] font-bold text-xs flex items-center space-x-1 shadow-sm transition cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span>Reject</span>
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleApproveRental(pr.rental_id)}
-                      className="px-3.5 py-1.5 rounded-lg bg-[#0F3D37] hover:bg-[#0c332e] text-[#FBF6EA] font-bold text-xs flex items-center space-x-1 shadow-sm transition cursor-pointer"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      <span>Approve</span>
-                    </button>
-                    <button
-                      onClick={() => handleRejectRental(pr.rental_id)}
-                      className="px-3.5 py-1.5 rounded-lg bg-[#C1440E] hover:bg-[#a8390c] text-[#FBF6EA] font-bold text-xs flex items-center space-x-1 shadow-sm transition cursor-pointer"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                      <span>Reject</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

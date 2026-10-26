@@ -582,7 +582,7 @@ const Landing = () => {
                   to="/login"
                   className="w-full py-3 rounded-xl bg-[#C1440E] text-[#FBF6EA] font-bold text-center block text-sm shadow-lg shadow-[#C1440E]/30 hover:bg-[#a8390c]"
                 >
-                  Log In to Request Rental
+                  Log In to Submit Space Reservation (Min. 6 Mos)
                 </Link>
               ) : (
                 <button
