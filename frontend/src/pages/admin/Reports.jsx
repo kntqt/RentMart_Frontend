@@ -24,12 +24,35 @@ const AdminReports = () => {
   useMarketFonts();
   const [data, setData] = useState({
     kpis: { totalCollections: 0, occupancyRate: '0%' },
-    revenueChart: []
+    revenueChart: [],
+    revenuePerformance: {
+      year: [],
+      month: [],
+      weeks: [],
+      days: []
+    }
   });
+  const [revenuePeriod, setRevenuePeriod] = useState('month');
 
   useEffect(() => {
     api.get('/dashboard/admin').then(res => setData(res.data)).catch(err => console.error(err));
   }, []);
+
+  const revenuePeriods = [
+    { key: 'year', label: 'Year', subtitle: 'Yearly market space collections overview' },
+    { key: 'month', label: 'Month', subtitle: 'Monthly market space collections overview' },
+    { key: 'weeks', label: 'Weeks', subtitle: 'Weekly market space collections overview' },
+    { key: 'days', label: 'Days', subtitle: 'Daily market space collections overview' },
+  ];
+
+  const activeRevenueData =
+    data.revenuePerformance?.[revenuePeriod] ||
+    data.revenuePerformance?.[revenuePeriod + 's'] ||
+    (revenuePeriod === 'month' ? data.revenueChart : []);
+
+  const currentSubtitle =
+    revenuePeriods.find((p) => p.key === revenuePeriod)?.subtitle ||
+    'Monthly market space collections overview';
 
   return (
     <DashboardLayout>
@@ -75,13 +98,35 @@ const AdminReports = () => {
         </div>
 
         <div className="p-8 rounded-2xl bg-white border border-[#241C15]/8 shadow-sm space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-bold text-[#241C15]">Revenue Trend (Last 6 Months)</h3>
-              <p className="text-xs text-[#241C15]/40">Monthly market space collections overview</p>
+              <h3 className="text-lg font-bold text-[#241C15]">Revenue Performance</h3>
+              <p className="text-xs text-[#241C15]/40">{currentSubtitle}</p>
+            </div>
+
+            {/* Timeframe Filter Tabs: Year | Month | Weeks | Days */}
+            <div className="inline-flex p-1 bg-[#F6EFDE] rounded-xl border border-[#241C15]/8 self-start sm:self-auto">
+              {revenuePeriods.map((p) => {
+                const active = revenuePeriod === p.key;
+                return (
+                  <button
+                    key={p.key}
+                    type="button"
+                    onClick={() => setRevenuePeriod(p.key)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                      active
+                        ? 'bg-[#0F3D37] text-white shadow-xs'
+                        : 'text-[#241C15]/60 hover:text-[#241C15] hover:bg-black/5'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <RevenueChart data={data.revenueChart} />
+
+          <RevenueChart data={activeRevenueData} period={revenuePeriod} />
         </div>
       </div>
     </DashboardLayout>

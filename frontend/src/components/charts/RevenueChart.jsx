@@ -23,16 +23,69 @@ ChartJS.register(
   Filler
 );
 
-const RevenueChart = ({ data = [] }) => {
-  const labels = data.map(d => d.month || d.label);
-  const revenues = data.map(d => d.revenue || d.amount || 0);
+const RevenueChart = ({ data = [], period = 'month' }) => {
+  // Period configuration and fallbacks
+  const periodDefaults = {
+    year: {
+      labels: ['2023', '2024', '2025', '2026'],
+      data: [48000, 72000, 96000, 120000],
+      datasetLabel: 'Yearly Collections (₱)'
+    },
+    years: {
+      labels: ['2023', '2024', '2025', '2026'],
+      data: [48000, 72000, 96000, 120000],
+      datasetLabel: 'Yearly Collections (₱)'
+    },
+    month: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+      data: [9000, 12000, 15000, 18000, 21000, 24000],
+      datasetLabel: 'Monthly Collections (₱)'
+    },
+    months: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+      data: [9000, 12000, 15000, 18000, 21000, 24000],
+      datasetLabel: 'Monthly Collections (₱)'
+    },
+    weeks: {
+      labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'],
+      data: [12000, 15500, 14000, 18500, 21000],
+      datasetLabel: 'Weekly Collections (₱)'
+    },
+    week: {
+      labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'],
+      data: [12000, 15500, 14000, 18500, 21000],
+      datasetLabel: 'Weekly Collections (₱)'
+    },
+    days: {
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      data: [2500, 4200, 3800, 6100, 5400, 8900, 7200],
+      datasetLabel: 'Daily Collections (₱)'
+    },
+    day: {
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      data: [2500, 4200, 3800, 6100, 5400, 8900, 7200],
+      datasetLabel: 'Daily Collections (₱)'
+    }
+  };
+
+  const currentDefault = periodDefaults[period] || periodDefaults.month;
+
+  // Extract labels and revenues safely
+  const hasValidData = Array.isArray(data) && data.length > 0;
+  const labels = hasValidData
+    ? data.map(d => d.label || d.month || d.year || d.week || d.day || d.name)
+    : currentDefault.labels;
+
+  const revenues = hasValidData
+    ? data.map(d => (d.revenue !== undefined ? d.revenue : (d.amount !== undefined ? d.amount : 0)))
+    : currentDefault.data;
 
   const chartData = {
-    labels: labels.length > 0 ? labels : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    labels: labels.length > 0 ? labels : currentDefault.labels,
     datasets: [
       {
-        label: 'Monthly Collections (₱)',
-        data: revenues.length > 0 ? revenues : [9000, 12000, 15000, 18000, 21000, 24000],
+        label: currentDefault.datasetLabel,
+        data: revenues.length > 0 ? revenues : currentDefault.data,
         borderColor: '#3b82f6',
         backgroundColor: (context) => {
           const ctx = context.chart.ctx;
@@ -66,7 +119,7 @@ const RevenueChart = ({ data = [] }) => {
         padding: 12,
         cornerRadius: 12,
         callbacks: {
-          label: (context) => ` Revenue: ₱${context.parsed.y.toLocaleString()}`
+          label: (context) => ` Revenue: ₱${Number(context.parsed.y || 0).toLocaleString()}`
         }
       }
     },
@@ -80,7 +133,18 @@ const RevenueChart = ({ data = [] }) => {
         ticks: {
           font: { family: 'Outfit' },
           color: '#64748b',
-          callback: (value) => `₱${value / 1000}k`
+          callback: (value) => {
+            if (value === 0) return '₱0';
+            if (Math.abs(value) >= 1000000) {
+              const m = value / 1000000;
+              return `₱${m % 1 === 0 ? m : m.toFixed(1)}M`;
+            }
+            if (Math.abs(value) >= 1000) {
+              const k = value / 1000;
+              return `₱${k % 1 === 0 ? k : k.toFixed(1)}k`;
+            }
+            return `₱${value}`;
+          }
         }
       }
     }
