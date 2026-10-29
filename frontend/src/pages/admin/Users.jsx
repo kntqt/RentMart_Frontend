@@ -94,6 +94,10 @@ const AdminUsers = () => {
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
+    if (formData.contact_number && formData.contact_number.length !== 11) {
+      setFlash({ type: 'error', message: 'Contact number must be exactly 11 digits (e.g. 09123456789). Words, letters, and symbols are not accepted.' });
+      return;
+    }
     try {
       await api.post('/users', formData);
       setFlash({ type: 'success', message: 'User account created successfully.' });
@@ -107,6 +111,10 @@ const AdminUsers = () => {
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    if (formData.contact_number && formData.contact_number.length !== 11) {
+      setFlash({ type: 'error', message: 'Contact number must be exactly 11 digits (e.g. 09123456789). Words, letters, and symbols are not accepted.' });
+      return;
+    }
     try {
       await api.put(`/users/${selectedUser.id}`, formData);
       setFlash({ type: 'success', message: 'User details updated successfully.' });
@@ -499,13 +507,37 @@ const AdminUsers = () => {
               </select>
             </div>
             <div>
-              <label className={modalLabelClass}>Contact #</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className={modalLabelClass}>Contact #</label>
+                <span className={`text-[10px] font-semibold ${
+                  !formData.contact_number
+                    ? 'text-[#241C15]/40'
+                    : formData.contact_number.length === 11
+                    ? 'text-[#0F3D37]'
+                    : 'text-[#C1440E]'
+                }`}>
+                  {!formData.contact_number
+                    ? '11 digits'
+                    : formData.contact_number.length === 11
+                    ? '✓ 11 digits'
+                    : `${formData.contact_number.length}/11`}
+                </span>
+              </div>
               <input
-                type="text"
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={11}
+                placeholder="09123456789"
                 value={formData.contact_number}
-                onChange={(e) => setFormData({ ...formData, contact_number: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, contact_number: e.target.value.replace(/\D/g, '').slice(0, 11) })}
                 className={modalInputClass}
               />
+              {formData.contact_number && formData.contact_number.length !== 11 && (
+                <p className="text-[10px] text-[#C1440E] mt-1 font-medium">
+                  Must be exactly 11 digits (numbers only, no words).
+                </p>
+              )}
             </div>
           </div>
 
@@ -583,6 +615,40 @@ const AdminUsers = () => {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className={modalInputClass}
             />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className={modalLabelClass}>Contact #</label>
+              <span className={`text-[10px] font-semibold ${
+                !formData.contact_number
+                  ? 'text-[#241C15]/40'
+                  : formData.contact_number.length === 11
+                  ? 'text-[#0F3D37]'
+                  : 'text-[#C1440E]'
+              }`}>
+                {!formData.contact_number
+                  ? '11 digits'
+                  : formData.contact_number.length === 11
+                  ? '✓ 11 digits'
+                  : `${formData.contact_number.length}/11`}
+              </span>
+            </div>
+            <input
+              type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={11}
+              placeholder="09123456789"
+              value={formData.contact_number}
+              onChange={(e) => setFormData({ ...formData, contact_number: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+              className={modalInputClass}
+            />
+            {formData.contact_number && formData.contact_number.length !== 11 && (
+              <p className="text-[10px] text-[#C1440E] mt-1 font-medium">
+                Must be exactly 11 digits (numbers only, no words).
+              </p>
+            )}
           </div>
 
           <div>

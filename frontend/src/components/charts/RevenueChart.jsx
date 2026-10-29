@@ -126,7 +126,7 @@ const RevenueChart = ({ data = [], period = 'month' }) => {
     scales: {
       x: {
         grid: { display: false },
-        ticks: { font: { family: 'Outfit' }, color: '#64748b' }
+        ticks: { font: { family: 'Outfit' }, color: '#64748b', maxTicksLimit: 15 }
       },
       y: {
         grid: { color: '#f1f5f9' },

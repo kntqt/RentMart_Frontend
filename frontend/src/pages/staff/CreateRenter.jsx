@@ -49,12 +49,28 @@ const StaffCreateRenter = () => {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'contact_number') {
+      const numbersOnly = value.replace(/\D/g, '').slice(0, 11);
+      setFormData({ ...formData, contact_number: numbersOnly });
+      return;
+    }
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFlash({ type: '', message: '' });
+
+    // Validate 11-digit numeric contact number
+    if (formData.contact_number && formData.contact_number.length !== 11) {
+      setFlash({
+        type: 'error',
+        message: 'Contact number must be exactly 11 digits (e.g. 09123456789). Words, letters, and symbols are not accepted.'
+      });
+      return;
+    }
+
     setCreatedUser(null);
     setLoading(true);
 
@@ -168,11 +184,41 @@ const StaffCreateRenter = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className={labelClass}>Contact Number</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className={labelClass}>Contact Number</label>
+                  <span className={`text-[11px] font-semibold ${
+                    !formData.contact_number
+                      ? 'text-[#241C15]/40'
+                      : formData.contact_number.length === 11
+                      ? 'text-[#0F3D37]'
+                      : 'text-[#C1440E]'
+                  }`}>
+                    {!formData.contact_number
+                      ? '11 digits (numbers only)'
+                      : formData.contact_number.length === 11
+                      ? '✓ 11 digits'
+                      : `${formData.contact_number.length}/11 digits`}
+                  </span>
+                </div>
                 <div className="relative">
                   <Phone className="w-4 h-4 absolute left-3.5 top-3.5 text-[#241C15]/30" />
-                  <input type="text" name="contact_number" value={formData.contact_number} onChange={handleChange} placeholder="09123456789" className={"pl-10 pr-4 " + inputClass} />
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={11}
+                    name="contact_number"
+                    value={formData.contact_number}
+                    onChange={handleChange}
+                    placeholder="09123456789"
+                    className={"pl-10 pr-4 " + inputClass}
+                  />
                 </div>
+                {formData.contact_number && formData.contact_number.length !== 11 && (
+                  <p className="text-[11px] text-[#C1440E] mt-1 font-medium">
+                    Must be exactly 11 digits (numbers only, no letters).
+                  </p>
+                )}
               </div>
               <div>
                 <label className={labelClass}>Gender</label>

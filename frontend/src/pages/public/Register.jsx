@@ -63,6 +63,12 @@ const Register = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
+    if (name === 'contact_number') {
+      const numbersOnly = value.replace(/\D/g, '').slice(0, 11);
+      setFormData(prev => ({ ...prev, contact_number: numbersOnly }));
+      return;
+    }
+
     if (name === 'email') {
       setIsEmailManuallyEdited(true);
       setFormData(prev => ({ ...prev, email: value }));
@@ -82,6 +88,12 @@ const Register = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    // Error handling for 11-digit contact number
+    if (formData.contact_number && formData.contact_number.length !== 11) {
+      setError('Contact number must be exactly 11 digits (e.g. 09123456789). Words, letters, and symbols are not accepted.');
+      return;
+    }
 
     setLoading(true);
 
@@ -227,11 +239,29 @@ const Register = () => {
               </div>
 
               <div>
-                <label className={labelClass}>Contact Number</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className={labelClass}>Contact Number</label>
+                  <span className={`text-[11px] font-semibold ${
+                    !formData.contact_number
+                      ? 'text-[#241C15]/40'
+                      : formData.contact_number.length === 11
+                      ? 'text-[#0F3D37]'
+                      : 'text-[#C1440E]'
+                  }`}>
+                    {!formData.contact_number
+                      ? '11 digits (numbers only)'
+                      : formData.contact_number.length === 11
+                      ? '✓ 11 digits'
+                      : `${formData.contact_number.length}/11 digits`}
+                  </span>
+                </div>
                 <div className="relative">
                   <Phone className="w-4 h-4 absolute left-3.5 top-3.5 text-[#241C15]/40" />
                   <input
-                    type="text"
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={11}
                     name="contact_number"
                     value={formData.contact_number}
                     onChange={handleChange}
@@ -239,6 +269,11 @@ const Register = () => {
                     className={inputClass}
                   />
                 </div>
+                {formData.contact_number && formData.contact_number.length !== 11 && (
+                  <p className="text-[11px] text-[#C1440E] mt-1 font-medium">
+                    Must be exactly 11 digits (numbers only, no words or symbols).
+                  </p>
+                )}
               </div>
             </div>
 

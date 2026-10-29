@@ -69,6 +69,17 @@ const ProfilePage = () => {
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
+    setFlash({ type: '', message: '' });
+
+    // Validate 11-digit numeric contact number
+    if (formData.contact_number && formData.contact_number.length !== 11) {
+      setFlash({
+        type: 'error',
+        message: 'Contact number must be exactly 11 digits (e.g. 09123456789). Words, letters, and symbols are not accepted.'
+      });
+      return;
+    }
+
     setSavingProfile(true);
     try {
       const data = new FormData();
@@ -213,13 +224,37 @@ const ProfilePage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className={labelClass}>Contact Number</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className={labelClass}>Contact Number</label>
+                  <span className={`text-[11px] font-semibold ${
+                    !formData.contact_number
+                      ? 'text-[#241C15]/40'
+                      : formData.contact_number.length === 11
+                      ? 'text-[#0F3D37]'
+                      : 'text-[#C1440E]'
+                  }`}>
+                    {!formData.contact_number
+                      ? '11 digits (numbers only)'
+                      : formData.contact_number.length === 11
+                      ? '✓ 11 digits'
+                      : `${formData.contact_number.length}/11 digits`}
+                  </span>
+                </div>
                 <input
-                  type="text"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={11}
+                  placeholder="09123456789"
                   value={formData.contact_number}
-                  onChange={(e) => setFormData({ ...formData, contact_number: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, contact_number: e.target.value.replace(/\D/g, '').slice(0, 11) })}
                   className={inputClass}
                 />
+                {formData.contact_number && formData.contact_number.length !== 11 && (
+                  <p className="text-[11px] text-[#C1440E] mt-1 font-medium">
+                    Must be exactly 11 digits (numbers only, no words or letters).
+                  </p>
+                )}
               </div>
               <div>
                 <label className={labelClass}>Gender</label>
