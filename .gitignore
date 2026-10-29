@@ -1,23 +1,26 @@
-# Dependencies
+# ─── Dependencies ────────────────────────────────────────────────────────────
 node_modules/
 **/node_modules/
 
-# Production build outputs
-dist/
-**/dist/
-build/
-**/build/
-.vite/
-**/.vite/
-
-# Environment variables
+# ─── Environment Variables & Secrets ─────────────────────────────────────────
 .env
 .env.*
 !.env.example
 **/.env
 **/.env.*
+!**/.env.example
 
-# Logs
+# ─── Build Outputs ────────────────────────────────────────────────────────────
+dist/
+build/
+**/dist/
+**/build/
+
+# ─── Vite Cache ───────────────────────────────────────────────────────────────
+.vite/
+**/.vite/
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
 logs/
 *.log
 npm-debug.log*
@@ -25,24 +28,29 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Operating System files
+# ─── Operating System ─────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 Desktop.ini
+ehthumbs.db
 
-# IDE & Editor files
+# ─── IDE & Editor ─────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
 *.sublime-project
 *.sublime-workspace
-.antigravity/
-.gemini/
 
-# Caches & Test outputs
-.eslintcache
-.stylelintcache
+# ─── Package Manager Caches ───────────────────────────────────────────────────
+.npm/
+.pnpm-store/
+.yarn/
+
+# ─── TypeScript Build Info ────────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ─── Coverage ─────────────────────────────────────────────────────────────────
 coverage/
-tmp/
-temp/
+.nyc_output/
+
