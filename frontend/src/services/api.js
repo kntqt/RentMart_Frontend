@@ -1,14 +1,24 @@
 import axios from 'axios';
 
+// Get base URL: priority is localStorage override -> env variable -> default localhost:5000/api
+const getBaseURL = () => {
+  if (typeof window !== 'undefined') {
+    const custom = localStorage.getItem('rentmart_api_url');
+    if (custom) return custom;
+  }
+  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json'
   }
 });
 
-// Attach JWT token automatically
+// Attach dynamic baseURL and JWT token automatically on every request
 api.interceptors.request.use((config) => {
+  config.baseURL = getBaseURL();
   const token = localStorage.getItem('token');
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
