@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import api from '../../services/api';
 import { formatCurrency, formatDate } from '../../utils/formatters';
-import { Store } from 'lucide-react';
+import { Store, CalendarDays, DollarSign } from 'lucide-react';
 
 const useMarketFonts = () => {
   useEffect(() => {
@@ -21,25 +21,78 @@ const monoStyle = { fontFamily: "'IBM Plex Mono', monospace" };
 const RenterTransactions = () => {
   useMarketFonts();
   const [payments, setPayments] = useState([]);
+  const [summary, setSummary] = useState({ totalOverallToPay: 0, nextDateToPay: null });
 
   useEffect(() => {
-    api.get('/payments/renter').then(res => setPayments(res.data || [])).catch(err => console.error(err));
+    // Load payments list
+    api.get('/payments/renter').then(res => {
+      const d = res.data;
+      // API may return array or object with payments array
+      if (Array.isArray(d)) {
+        setPayments(d);
+      } else {
+        setPayments(d.payments || []);
+      }
+    }).catch(err => console.error(err));
+
+    // Load summary from dashboard
+    api.get('/dashboard/renter').then(res => {
+      const d = res.data;
+      setSummary({
+        totalOverallToPay: d.totalOverallToPay ?? d.total_overall_to_pay ?? d.outstandingBalance ?? 0,
+        nextDateToPay: d.nextDateToPay ?? d.next_date_to_pay ?? d.nextDueDate ?? null,
+      });
+    }).catch(err => console.error(err));
   }, []);
+
+  // Group payments by month_name if available
+  const grouped = {};
+  payments.forEach(p => {
+    const key = p.month_name || formatDate(p.date_to_pay) || 'Other';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(p);
+  });
+  const hasGroups = payments.some(p => p.month_name);
 
   return (
     <DashboardLayout>
       <div className="space-y-6" style={{ fontFamily: "'Work Sans', sans-serif" }}>
         <div>
           <h1 className="text-2xl text-[#241C15] tracking-tight" style={displayStyle}>My Payment History</h1>
-          <p className="text-sm text-[#241C15]/50 font-medium">Personal transaction history and digital payment receipts.</p>
+          <p className="text-sm text-[#241C15]/50 font-medium">Personal transaction history and digital payment receipts — organized by month.</p>
         </div>
 
+        {/* Summary Bar */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-5 rounded-2xl bg-white border border-[#241C15]/8 shadow-sm flex items-center gap-4" style={{ borderLeft: '4px solid #C1440E' }}>
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#C1440E1A', color: '#C1440E' }}>
+              <DollarSign className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-[#241C15]/40">Total Outstanding</p>
+              <p className="text-xl font-bold text-[#241C15]" style={monoStyle}>{formatCurrency(summary.totalOverallToPay)}</p>
+            </div>
+          </div>
+          <div className="p-5 rounded-2xl bg-white border border-[#241C15]/8 shadow-sm flex items-center gap-4" style={{ borderLeft: '4px solid #E8A33D' }}>
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#E8A33D1A', color: '#E8A33D' }}>
+              <CalendarDays className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-[#241C15]/40">Next Payment Due</p>
+              <p className="text-xl font-bold text-[#241C15]" style={monoStyle}>{formatDate(summary.nextDateToPay) || 'N/A'}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Payments Table */}
         <div className="bg-white rounded-2xl border border-[#241C15]/8 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[#F6EFDE] border-b border-[#241C15]/8 text-xs font-bold text-[#241C15]/40 uppercase tracking-wider">
                   <th className="py-4 px-6">Official Receipt #</th>
+                  <th className="py-4 px-6">Month</th>
+                  <th className="py-4 px-6">Date to Pay</th>
                   <th className="py-4 px-6">Stall Space</th>
                   <th className="py-4 px-6">Amount Paid</th>
                   <th className="py-4 px-6">Balance Remaining</th>
@@ -50,13 +103,19 @@ const RenterTransactions = () => {
               <tbody className="divide-y divide-[#241C15]/8 text-sm">
                 {payments.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="py-8 text-center text-[#241C15]/40 font-medium">No personal payment records found.</td>
+                    <td colSpan="8" className="py-8 text-center text-[#241C15]/40 font-medium">No personal payment records found.</td>
                   </tr>
                 ) : (
                   payments.map((p) => (
                     <tr key={p.id} className="hover:bg-[#F6EFDE]/60 transition">
                       <td className="py-4 px-6 text-xs font-bold text-[#241C15]/70" style={monoStyle}>
                         {p.reference_number || `OR-${p.id}`}
+                      </td>
+                      <td className="py-4 px-6 text-xs font-semibold text-[#241C15]">
+                        {p.month_name || '—'}
+                      </td>
+                      <td className="py-4 px-6 text-xs text-[#241C15]/60 font-medium" style={monoStyle}>
+                        {formatDate(p.date_to_pay) || '—'}
                       </td>
                       <td className="py-4 px-6">
                         <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-[#0F3D37]/8 text-[#0F3D37] font-bold text-xs border border-[#0F3D37]/20">

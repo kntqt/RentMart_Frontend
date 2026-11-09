@@ -515,14 +515,14 @@ const AdminRenters = () => {
 
                 <div className="p-4 rounded-xl bg-white border border-[#241C15]/8 space-y-1 shadow-sm">
                   <div className="flex items-center justify-between text-[#241C15]/50">
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Unpaid Balance</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Monthly Outstanding</span>
                     <AlertTriangle className="w-3.5 h-3.5 text-[#C1440E]" />
                   </div>
                   <p className={`text-xl font-bold ${(selectedRenter.unpaid_balance || 0) > 0 ? 'text-[#C1440E]' : 'text-[#0F3D37]'}`} style={monoStyle}>
                     {formatCurrency(selectedRenter.unpaid_balance || 0)}
                   </p>
                   <p className="text-[11px] font-bold" style={{ color: (selectedRenter.unpaid_balance || 0) > 0 ? '#C1440E' : '#0F3D37' }}>
-                    {(selectedRenter.unpaid_balance || 0) > 0 ? '⚠ New Bookings Blocked' : '✓ Good Standing (Paid)'}
+                    {(selectedRenter.unpaid_balance || 0) > 0 ? `⚠ ${(() => { const cnt = (selectedRenter.billings||[]).filter(b=>b.status!=='paid'&&b.balance>0).length; return cnt + ' month' + (cnt!==1?'s':'') + ' unpaid'; })()} — Blocked` : '✓ Good Standing (Paid)'}
                   </p>
                 </div>
               </div>
@@ -636,7 +636,7 @@ const AdminRenters = () => {
                               </p>
 
                               <p className="text-xs font-bold text-[#C1440E]" style={monoStyle}>
-                                Annual Rate: {formatCurrency(rental.monthly_rate)}
+                                Monthly Rate: {formatCurrency(rental.monthly_rate)} / mo
                               </p>
                             </div>
                           </div>
@@ -654,37 +654,74 @@ const AdminRenters = () => {
                 </div>
               )}
 
-              {/* Tab 2: Billings */}
+              {/* Tab 2: Billings — Monthly Schedule */}
               {activeTab === 'billings' && (
                 <div className="space-y-3">
-                  <p className="text-xs text-[#241C15]/60 font-medium">
-                    Itemized billing statements across all rented stalls for this profile:
-                  </p>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <p className="text-xs text-[#241C15]/60 font-medium">
+                      Monthly billing schedule across all rented stalls:
+                    </p>
+                    {selectedRenter.billings && selectedRenter.billings.length > 0 && (() => {
+                      const unpaidBills = (selectedRenter.billings || []).filter(b => b.status !== 'paid' && parseFloat(b.balance || 0) > 0);
+                      const totalOut = unpaidBills.reduce((s, b) => s + parseFloat(b.balance || 0), 0);
+                      const nextDue = unpaidBills.sort((a, b2) => (a.due_date || '') < (b2.due_date || '') ? -1 : 1)[0]?.due_date;
+                      return (
+                        <div className="flex items-center gap-2 text-xs flex-wrap">
+                          <span className="px-2.5 py-1 rounded-lg bg-[#C1440E]/10 text-[#C1440E] font-bold border border-[#C1440E]/20">
+                            Total Outstanding: {formatCurrency(totalOut)}
+                          </span>
+                          {nextDue && (
+                            <span className="px-2.5 py-1 rounded-lg bg-[#E8A33D]/10 text-[#8a5f1f] font-bold border border-[#E8A33D]/20">
+                              Next Due: {formatDate(nextDue)}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
                   {(!selectedRenter.billings || selectedRenter.billings.length === 0) ? (
                     <div className="py-8 text-center bg-[#F6EFDE]/50 rounded-xl border border-dashed border-[#241C15]/15 text-xs text-[#241C15]/50">
                       No billing statements generated for this renter yet.
                     </div>
                   ) : (
-                    <div className="divide-y divide-[#241C15]/8 border border-[#241C15]/8 rounded-xl bg-white overflow-hidden text-xs">
-                      {selectedRenter.billings.map((b) => (
-                        <div key={b.id} className="p-3.5 flex items-center justify-between hover:bg-[#F6EFDE]/40 transition">
-                          <div>
-                            <div className="flex items-center space-x-2">
-                              <span className="px-2 py-0.5 rounded bg-[#241C15] text-[#FBF6EA] font-mono font-bold text-[10px]">
-                                {b.space_number}
-                              </span>
-                              <p className="font-bold text-[#241C15]">Billing Month: {b.billing_month}</p>
-                            </div>
-                            <p className="text-[#241C15]/50 mt-0.5 text-[11px]">Due Date: {b.due_date} • Statement #{b.id}</p>
-                          </div>
-                          <div className="text-right space-y-1">
-                            <p className="font-bold text-[#241C15]" style={monoStyle}>
-                              Balance: <span className={parseFloat(b.balance || 0) > 0 ? 'text-[#C1440E]' : 'text-[#0F3D37]'}>{formatCurrency(b.balance)}</span> / Due: {formatCurrency(b.amount_due)}
-                            </p>
-                            <StatusBadge status={b.status} />
-                          </div>
-                        </div>
-                      ))}
+                    <div className="border border-[#241C15]/8 rounded-xl bg-white overflow-hidden text-xs overflow-x-auto">
+                      <table className="w-full text-left border-collapse min-w-[600px]">
+                        <thead>
+                          <tr className="bg-[#F6EFDE] text-[10px] font-bold text-[#241C15]/40 uppercase tracking-wider">
+                            <th className="py-2.5 px-3">Space</th>
+                            <th className="py-2.5 px-3">Month</th>
+                            <th className="py-2.5 px-3">Date to Pay</th>
+                            <th className="py-2.5 px-3">Monthly Amount</th>
+                            <th className="py-2.5 px-3">Paid</th>
+                            <th className="py-2.5 px-3">Balance</th>
+                            <th className="py-2.5 px-3">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#241C15]/8">
+                          {selectedRenter.billings.map((b) => {
+                            const monthDate = new Date(b.billing_month || '');
+                            const monthName = b.month_name || (!isNaN(monthDate.getTime())
+                              ? monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                              : b.billing_month);
+                            const paidForMonth = (b.payments || []).reduce((s, p) => s + parseFloat(p.amount_paid || 0), 0);
+                            return (
+                              <tr key={b.id} className={`hover:bg-[#F6EFDE]/40 transition ${b.status === 'overdue' ? 'bg-[#C1440E]/3' : b.status === 'paid' ? 'bg-[#0F3D37]/3' : ''}`}>
+                                <td className="py-2.5 px-3">
+                                  <span className="px-2 py-0.5 rounded bg-[#241C15] text-[#FBF6EA] font-mono font-bold text-[10px]">{b.space_number}</span>
+                                </td>
+                                <td className="py-2.5 px-3 font-bold text-[#241C15]">{monthName}</td>
+                                <td className="py-2.5 px-3 text-[#241C15]/60" style={monoStyle}>{formatDate(b.date_to_pay || b.due_date)}</td>
+                                <td className="py-2.5 px-3 font-bold text-[#241C15]" style={monoStyle}>{formatCurrency(b.amount_due)}</td>
+                                <td className="py-2.5 px-3 text-[#0F3D37] font-semibold" style={monoStyle}>{formatCurrency(b.total_paid_for_month ?? paidForMonth)}</td>
+                                <td className="py-2.5 px-3 font-bold" style={{ ...monoStyle, color: parseFloat(b.balance || 0) > 0 ? '#C1440E' : '#0F3D37' }}>
+                                  {formatCurrency(b.balance)}
+                                </td>
+                                <td className="py-2.5 px-3"><StatusBadge status={b.status} /></td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
                   )}
                 </div>

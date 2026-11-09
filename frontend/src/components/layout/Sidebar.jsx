@@ -8,6 +8,7 @@ import {
   Users,
   UserPlus,
   Building2,
+  CalendarDays,
   Receipt,
   CreditCard,
   BarChart3,
@@ -66,6 +67,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
     { label: 'Overview', path: '/renter/dashboard', icon: LayoutDashboard },
     { label: 'Profile', path: '/renter/profile', icon: User },
     { label: 'Availed Space', path: '/renter/availed_space', icon: Building2 },
+    { label: 'Schedule', path: '/renter/yearly-lease', icon: CalendarDays },
     { label: 'Browse Space', path: '/renter/spaces', icon: Store },
     { label: 'Transactions', path: '/renter/transactions', icon: CreditCard },
   ];

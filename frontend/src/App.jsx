@@ -1,35 +1,36 @@
-import React, { lazy, Suspense } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
-// Public Pages
-const Landing = lazy(() => import('./pages/public/Landing'));
-const Login = lazy(() => import('./pages/public/Login'));
-const Register = lazy(() => import('./pages/public/Register'));
+// Public Pages (Static imports for instant zero-lag navigation)
+import Landing from './pages/public/Landing';
+import Login from './pages/public/Login';
+import Register from './pages/public/Register';
 
 // Admin Pages
-const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
-const AdminUsers = lazy(() => import('./pages/admin/Users'));
-const AdminRenters = lazy(() => import('./pages/admin/Renters'));
-const AdminSpaces = lazy(() => import('./pages/admin/Spaces'));
-const AdminTransactions = lazy(() => import('./pages/admin/Transactions'));
-const AdminReports = lazy(() => import('./pages/admin/Reports'));
+import AdminDashboard from './pages/admin/Dashboard';
+import AdminUsers from './pages/admin/Users';
+import AdminRenters from './pages/admin/Renters';
+import AdminSpaces from './pages/admin/Spaces';
+import AdminTransactions from './pages/admin/Transactions';
+import AdminReports from './pages/admin/Reports';
 
 // Staff Pages
-const StaffDashboard = lazy(() => import('./pages/staff/Dashboard'));
-const StaffCreateRenter = lazy(() => import('./pages/staff/CreateRenter'));
-const StaffSpaces = lazy(() => import('./pages/staff/Spaces'));
-const StaffBilling = lazy(() => import('./pages/staff/Billing'));
-const StaffPayments = lazy(() => import('./pages/staff/Payments'));
+import StaffDashboard from './pages/staff/Dashboard';
+import StaffCreateRenter from './pages/staff/CreateRenter';
+import StaffSpaces from './pages/staff/Spaces';
+import StaffBilling from './pages/staff/Billing';
+import StaffPayments from './pages/staff/Payments';
 
 // Renter Pages
-const RenterDashboard = lazy(() => import('./pages/renter/Dashboard'));
-const RenterAvailedSpace = lazy(() => import('./pages/renter/AvailedSpace'));
-const RenterSpaces = lazy(() => import('./pages/renter/Spaces'));
-const RenterTransactions = lazy(() => import('./pages/renter/Transactions'));
+import RenterDashboard from './pages/renter/Dashboard';
+import RenterAvailedSpace from './pages/renter/AvailedSpace';
+import RenterSpaces from './pages/renter/Spaces';
+import RenterTransactions from './pages/renter/Transactions';
+import RenterYearlyLease from './pages/renter/YearlyLease';
 
 // Shared
-const ProfilePage = lazy(() => import('./pages/shared/ProfilePage'));
+import ProfilePage from './pages/shared/ProfilePage';
 
 // Page Fallback Loading Spinner
 const PageLoader = () => (
@@ -65,42 +66,41 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
 function AppRoutes() {
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
 
-        {/* Admin Routes */}
-        <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
-        <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsers /></ProtectedRoute>} />
-        <Route path="/admin/renters" element={<ProtectedRoute allowedRoles={['admin']}><AdminRenters /></ProtectedRoute>} />
-        <Route path="/admin/spaces" element={<ProtectedRoute allowedRoles={['admin']}><AdminSpaces /></ProtectedRoute>} />
-        <Route path="/admin/transactions" element={<ProtectedRoute allowedRoles={['admin']}><AdminTransactions /></ProtectedRoute>} />
-        <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['admin']}><AdminReports /></ProtectedRoute>} />
-        <Route path="/admin/profile" element={<ProtectedRoute allowedRoles={['admin']}><ProfilePage /></ProtectedRoute>} />
+      {/* Admin Routes */}
+      <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsers /></ProtectedRoute>} />
+      <Route path="/admin/renters" element={<ProtectedRoute allowedRoles={['admin']}><AdminRenters /></ProtectedRoute>} />
+      <Route path="/admin/spaces" element={<ProtectedRoute allowedRoles={['admin']}><AdminSpaces /></ProtectedRoute>} />
+      <Route path="/admin/transactions" element={<ProtectedRoute allowedRoles={['admin']}><AdminTransactions /></ProtectedRoute>} />
+      <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['admin']}><AdminReports /></ProtectedRoute>} />
+      <Route path="/admin/profile" element={<ProtectedRoute allowedRoles={['admin']}><ProfilePage /></ProtectedRoute>} />
 
-        {/* Staff Routes */}
-        <Route path="/staff/dashboard" element={<ProtectedRoute allowedRoles={['staff']}><StaffDashboard /></ProtectedRoute>} />
-        <Route path="/staff/renters" element={<ProtectedRoute allowedRoles={['staff']}><AdminRenters /></ProtectedRoute>} />
-        <Route path="/staff/create-renter" element={<ProtectedRoute allowedRoles={['staff']}><StaffCreateRenter /></ProtectedRoute>} />
-        <Route path="/staff/spaces" element={<ProtectedRoute allowedRoles={['staff']}><StaffSpaces /></ProtectedRoute>} />
-        <Route path="/staff/payments" element={<ProtectedRoute allowedRoles={['staff']}><StaffPayments /></ProtectedRoute>} />
-        <Route path="/staff/billing" element={<ProtectedRoute allowedRoles={['staff']}><StaffBilling /></ProtectedRoute>} />
-        <Route path="/staff/profile" element={<ProtectedRoute allowedRoles={['staff']}><ProfilePage /></ProtectedRoute>} />
+      {/* Staff Routes */}
+      <Route path="/staff/dashboard" element={<ProtectedRoute allowedRoles={['staff']}><StaffDashboard /></ProtectedRoute>} />
+      <Route path="/staff/renters" element={<ProtectedRoute allowedRoles={['staff']}><AdminRenters /></ProtectedRoute>} />
+      <Route path="/staff/create-renter" element={<ProtectedRoute allowedRoles={['staff']}><StaffCreateRenter /></ProtectedRoute>} />
+      <Route path="/staff/spaces" element={<ProtectedRoute allowedRoles={['staff']}><StaffSpaces /></ProtectedRoute>} />
+      <Route path="/staff/payments" element={<ProtectedRoute allowedRoles={['staff']}><StaffPayments /></ProtectedRoute>} />
+      <Route path="/staff/billing" element={<ProtectedRoute allowedRoles={['staff']}><StaffBilling /></ProtectedRoute>} />
+      <Route path="/staff/profile" element={<ProtectedRoute allowedRoles={['staff']}><ProfilePage /></ProtectedRoute>} />
 
-        {/* Renter Routes */}
-        <Route path="/renter/dashboard" element={<ProtectedRoute allowedRoles={['renter']}><RenterDashboard /></ProtectedRoute>} />
-        <Route path="/renter/availed_space" element={<ProtectedRoute allowedRoles={['renter']}><RenterAvailedSpace /></ProtectedRoute>} />
-        <Route path="/renter/spaces" element={<ProtectedRoute allowedRoles={['renter']}><RenterSpaces /></ProtectedRoute>} />
-        <Route path="/renter/transactions" element={<ProtectedRoute allowedRoles={['renter']}><RenterTransactions /></ProtectedRoute>} />
-        <Route path="/renter/profile" element={<ProtectedRoute allowedRoles={['renter']}><ProfilePage /></ProtectedRoute>} />
+      {/* Renter Routes */}
+      <Route path="/renter/dashboard" element={<ProtectedRoute allowedRoles={['renter']}><RenterDashboard /></ProtectedRoute>} />
+      <Route path="/renter/availed_space" element={<ProtectedRoute allowedRoles={['renter']}><RenterAvailedSpace /></ProtectedRoute>} />
+      <Route path="/renter/yearly-lease" element={<ProtectedRoute allowedRoles={['renter']}><RenterYearlyLease /></ProtectedRoute>} />
+      <Route path="/renter/spaces" element={<ProtectedRoute allowedRoles={['renter']}><RenterSpaces /></ProtectedRoute>} />
+      <Route path="/renter/transactions" element={<ProtectedRoute allowedRoles={['renter']}><RenterTransactions /></ProtectedRoute>} />
+      <Route path="/renter/profile" element={<ProtectedRoute allowedRoles={['renter']}><ProfilePage /></ProtectedRoute>} />
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Suspense>
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 

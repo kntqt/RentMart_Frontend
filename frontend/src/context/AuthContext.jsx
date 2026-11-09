@@ -9,7 +9,12 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
   const [token, setToken] = useState(() => localStorage.getItem('token') || null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    const savedToken = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    // If no token, not loading. If token and user exist in storage, render immediately!
+    return savedToken ? !savedUser : false;
+  });
 
   useEffect(() => {
     if (token) {

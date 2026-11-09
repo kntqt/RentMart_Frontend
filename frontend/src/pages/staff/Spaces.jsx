@@ -239,7 +239,7 @@ const StaffSpaces = () => {
     setLookupError('');
     const todayStr = new Date().toISOString().split('T')[0];
     setStartDate(todayStr);
-    setEndDate(addMonthsToDate(todayStr, 6)); // default to 6-month minimum
+    setEndDate(addMonthsToDate(todayStr, 12)); // default to 1-Year (12 Months)
     setIsAssignOpen(true);
   };
 
@@ -508,9 +508,15 @@ const StaffSpaces = () => {
                   <p className="text-sm font-bold text-[#241C15]">{s.location || 'Duero Public Market'}</p>
                   <p className="text-xs text-[#241C15]/50 line-clamp-2 leading-relaxed">{s.description || 'Market stall unit'}</p>
                 </div>
-                <div className="pt-3 border-t-2 border-dashed border-[#C1440E]/20 flex justify-between items-center text-xs">
-                  <span className="text-[#241C15]/50">Size: <strong className="text-[#241C15]">{s.size_sqm} sqm</strong></span>
-                  <span className="text-[#C1440E] font-bold text-sm" style={monoStyle}>{formatCurrency(s.monthly_rate)} / yr</span>
+                <div className="pt-3 border-t-2 border-dashed border-[#C1440E]/20 space-y-1.5 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#241C15]/50">Size: <strong className="text-[#241C15]">{s.size_sqm} sqm</strong></span>
+                    <span className="text-[#5340C6] font-bold text-xs" style={monoStyle}>Total: {formatCurrency(s.space_amount || (s.monthly_rate >= 10000 ? s.monthly_rate : s.monthly_rate * 12))}</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#F6EFDE] px-2 py-1 rounded-md">
+                    <span className="text-[11px] text-[#241C15]/60 font-semibold">Monthly (÷ 12):</span>
+                    <span className="text-[#C1440E] font-bold text-sm" style={monoStyle}>{formatCurrency(s.monthly_rate || 2500)} / mo</span>
+                  </div>
                 </div>
                 <div className="pt-1">
                   {s.status === 'available' ? (
@@ -538,7 +544,10 @@ const StaffSpaces = () => {
           <div className="bg-[#F6EFDE] p-4 rounded-xl border border-[#241C15]/8">
             <p className="text-xs text-[#241C15]/40 font-bold uppercase">Selected Market Stall</p>
             <p className="text-lg font-bold text-[#241C15]">{selectedSpace?.space_number} ({selectedSpace?.location})</p>
-            <p className="text-sm font-bold text-[#C1440E] mt-1" style={monoStyle}>Yearly Lease Rate: {formatCurrency(selectedSpace?.monthly_rate)}</p>
+            <div className="flex justify-between items-center mt-2 pt-2 border-t border-[#241C15]/10">
+              <span className="text-xs text-[#5340C6] font-bold" style={monoStyle}>Total Space Amount (1 Yr): {formatCurrency(selectedSpace?.space_amount || (selectedSpace?.monthly_rate >= 10000 ? selectedSpace?.monthly_rate : selectedSpace?.monthly_rate * 12))}</span>
+              <span className="text-xs text-[#C1440E] font-bold" style={monoStyle}>Monthly (÷ 12): {formatCurrency(selectedSpace?.monthly_rate)} / mo</span>
+            </div>
           </div>
 
           {/* AJAX Renter Email Lookup */}

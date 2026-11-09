@@ -38,12 +38,22 @@ const monoStyle = { fontFamily: "'IBM Plex Mono', monospace" };
 const modalLabelClass = "block text-xs font-bold text-[#241C15]/60 uppercase mb-1";
 const modalInputClass = "w-full px-4 py-2.5 rounded-lg border border-[#241C15]/15 text-sm text-[#241C15] focus:outline-none focus:border-[#C1440E] transition bg-white";
 
+// Helper: Get local date string YYYY-MM-DD
+function getLocalDateString(d = new Date()) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // Helper: Add months to a date string YYYY-MM-DD
 function addMonthsToDate(dateStr, monthsToAdd) {
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return '';
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length < 3) return '';
+  const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
   d.setMonth(d.getMonth() + monthsToAdd);
-  return d.toISOString().split('T')[0];
+  return getLocalDateString(d);
 }
 
 // Helper: Calculate month difference between two date strings
@@ -72,8 +82,8 @@ const RenterSpaces = () => {
   // Reservation Modal
   const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
   const [reserveTarget, setReserveTarget] = useState(null);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(addMonthsToDate(new Date().toISOString().split('T')[0], 6));
+  const [startDate, setStartDate] = useState(getLocalDateString());
+  const [endDate, setEndDate] = useState(addMonthsToDate(getLocalDateString(), 12));
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Renter Status & Rentals
@@ -137,9 +147,9 @@ const RenterSpaces = () => {
     }
 
     setReserveTarget(space);
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
     setStartDate(todayStr);
-    setEndDate(addMonthsToDate(todayStr, 6)); // Default to 6-month minimum
+    setEndDate(addMonthsToDate(todayStr, 12)); // Default to 1-Year (12 Months)
     setIsReserveModalOpen(true);
   };
 
@@ -335,9 +345,19 @@ const RenterSpaces = () => {
                     <p className="text-xs text-[#241C15]/50 line-clamp-2 leading-relaxed">{s.description}</p>
                   </div>
 
-                  <div className="pt-3 border-t-2 border-dashed border-[#C1440E]/20 flex justify-between items-center text-xs">
-                    <span className="text-[#241C15]/50">Size: <strong className="text-[#241C15]">{s.size_sqm} sqm</strong></span>
-                    <span className="text-[#C1440E] font-bold text-sm" style={monoStyle}>{formatCurrency(s.monthly_rate)} / yr</span>
+                  <div className="pt-3 border-t-2 border-dashed border-[#C1440E]/20 space-y-1.5 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[#241C15]/50">Size: <strong className="text-[#241C15]">{s.size_sqm} sqm</strong></span>
+                      <span className="text-[#5340C6] font-bold text-xs" style={monoStyle}>
+                        Total: {formatCurrency(parseFloat(s.space_amount) || (parseFloat(s.monthly_rate) >= 10000 ? parseFloat(s.monthly_rate) : Math.round(parseFloat(s.monthly_rate) * 12 * 100) / 100))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center bg-[#F6EFDE] px-2 py-1 rounded-md">
+                      <span className="text-[11px] text-[#241C15]/60 font-semibold">Monthly (÷ 12):</span>
+                      <span className="text-[#C1440E] font-bold text-sm" style={monoStyle}>
+                        {formatCurrency(Math.round(((parseFloat(s.space_amount) || (parseFloat(s.monthly_rate) >= 10000 ? parseFloat(s.monthly_rate) : Math.round(parseFloat(s.monthly_rate) * 12 * 100) / 100)) / 12) * 100) / 100)} / mo
+                      </span>
+                    </div>
                   </div>
 
                   <div className="space-y-2 pt-1">
@@ -412,8 +432,13 @@ const RenterSpaces = () => {
                   <p className="text-lg font-bold text-[#241C15]">{selectedSpace.size_sqm} sqm</p>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-[#241C15]/40 uppercase">Yearly Rate (6-Mo. Min)</label>
-                  <p className="text-lg font-bold text-[#C1440E]" style={monoStyle}>{formatCurrency(selectedSpace.monthly_rate)} / yr</p>
+                  <label className="text-xs font-bold text-[#241C15]/40 uppercase">Total Space Amount (1 Yr)</label>
+                  <p className="text-lg font-bold text-[#5340C6]" style={monoStyle}>
+                    {formatCurrency(parseFloat(selectedSpace.space_amount) || (parseFloat(selectedSpace.monthly_rate) >= 10000 ? parseFloat(selectedSpace.monthly_rate) : Math.round(parseFloat(selectedSpace.monthly_rate) * 12 * 100) / 100))}
+                  </p>
+                  <p className="text-xs font-bold text-[#C1440E] mt-0.5" style={monoStyle}>
+                    {formatCurrency(Math.round(((parseFloat(selectedSpace.space_amount) || (parseFloat(selectedSpace.monthly_rate) >= 10000 ? parseFloat(selectedSpace.monthly_rate) : Math.round(parseFloat(selectedSpace.monthly_rate) * 12 * 100) / 100)) / 12) * 100) / 100)} / mo (÷12)
+                  </p>
                 </div>
               </div>
               <div>
@@ -471,9 +496,15 @@ const RenterSpaces = () => {
                     <p className="text-lg font-bold text-[#241C15]">{reserveTarget.space_number}</p>
                     <p className="text-xs font-medium text-[#241C15]/60">{reserveTarget.location}</p>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[10px] text-[#241C15]/40 font-bold uppercase block">Annual Rate</span>
-                    <span className="text-sm font-bold text-[#C1440E]" style={monoStyle}>{formatCurrency(reserveTarget.monthly_rate)} / yr</span>
+                  <div className="text-right space-y-0.5">
+                    <span className="text-[10px] text-[#241C15]/40 font-bold uppercase block">Space Amount (1 Yr)</span>
+                    <span className="text-sm font-bold text-[#5340C6]" style={monoStyle}>
+                      {formatCurrency(parseFloat(reserveTarget.space_amount) || (parseFloat(reserveTarget.monthly_rate) >= 10000 ? parseFloat(reserveTarget.monthly_rate) : Math.round(parseFloat(reserveTarget.monthly_rate) * 12 * 100) / 100))}
+                    </span>
+                    <span className="text-xs font-bold text-[#C1440E] block" style={monoStyle}>
+                      {formatCurrency(Math.round(((parseFloat(reserveTarget.space_amount) || (parseFloat(reserveTarget.monthly_rate) >= 10000 ? parseFloat(reserveTarget.monthly_rate) : Math.round(parseFloat(reserveTarget.monthly_rate) * 12 * 100) / 100)) / 12) * 100) / 100)} / mo
+                    </span>
+                    <span className="text-[10px] text-[#0F3D37] font-semibold">(Divided by 12)</span>
                   </div>
                 </div>
               </div>
